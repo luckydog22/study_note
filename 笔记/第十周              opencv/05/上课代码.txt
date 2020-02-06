@@ -1,0 +1,556 @@
+
+//////////////////////////////////////////创建人脸识别库
+
+//    //第一步
+//    string filename = "test.csv";
+//    //创建读文件的流
+//    ifstream file(filename.c_str());
+
+//    //第二步
+//    //判断读取是否成功
+//    if(file ==NULL)
+//    {
+//        cout<<"file error"<<endl;
+//        return -1;
+//    }
+
+//    //定义存内容的string
+//    string path;
+//    string label;
+//    string line;
+
+//    vector<Mat> images;
+//    vector<int> labels;
+
+//    //第三步
+//    //开始读取
+//    while(getline(file,line))
+//    {
+//        stringstream line1(line);
+//        getline(line1,path,';');
+//        //参数一：（流）
+//        //参数二：放入另一个字符串
+//        //参数三：结束标志
+//        getline(line1,label);
+
+//        //第四步
+//        if(!path.empty() && (!label.empty()) )
+//        {
+//            images.push_back(imread(path,0));
+//            labels.push_back(atoi(label.c_str()));
+//        }
+//    }
+//    cout<<"images  "<<images.size()<<endl;
+//    cout<<"labels:   "<<labels.size()<<endl;
+//    //获得测试图片
+//    Mat tests = images[images.size()-1];
+//    int testI = labels[labels.size()-1];
+
+//    //从容器中取出
+//    images.pop_back();
+//    labels.pop_back();
+//    cout<<images.size()<<endl;
+
+//    //创建人脸识别器
+//    Ptr<EigenFaceRecognizer> model = EigenFaceRecognizer::create();
+//    //训练图片（map）
+//    model->train(images,labels);
+//    //设备人脸
+//   int re =  model->predict(tests);
+//   //返回值是人脸id
+//   cout<<re<<endl;
+
+  waitKey(0);
+
+
+
+////////////////////////////////////////////
+
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+
+Mat src ;
+//绘制直线
+void myline()
+{
+    //确定俩点
+    Point p1 = Point(10,10);
+
+    Point p2 ;
+    p2.x = 100;
+    p2.y = 100;
+
+    //确定线条颜色
+    Scalar color = Scalar(0,0,255);
+
+    //把点和颜色关联起来
+    line(src,p1,p2,color,2,LINE_8,0);
+    //参数一：原图
+    //参数二：第一个点
+    //参数三：第二个点
+    //参数四：颜色
+    //参数五：线条粗细
+    //参数六：线条种类
+    //参数七：
+}
+//绘制矩形
+void myRect()
+{
+    //创建矩形区域
+    Rect r = Rect(10,10,100,100);
+    //颜色
+    Scalar color = Scalar(0,0,255);
+    rectangle(src,r,color,2,LINE_8,0);
+}
+//绘制椭圆
+void myEag()
+{
+    // 定义圆心
+     int x = src.cols/2;
+     int y = src.rows/2;
+     Point p = Point(x,y);
+
+    //定义长轴和短轴
+     int x1  = src.cols/4;
+     int y1 = src.rows/8;
+     //倾斜程度
+     double angle = 45;
+     //画弧长起始位置
+     double start = 0;
+     double end = 360;
+    //形状的颜色
+    Scalar color = Scalar(0,255,0);
+    ellipse(src,p,Size(x1,y1),angle,start,end,color,2,LINE_8,0);
+}
+//绘制圆形
+void myCircle()
+{
+    int x = src.cols/2;
+    int y = src.rows/2;
+
+    int r = 50;
+    Scalar color = Scalar(0,0,255);
+    Point p = Point(x,y);
+    circle(src,p,r,color,2,LINE_8,0);
+}
+//显示文字
+void myText()
+{
+    //文字内容
+    string data = "one";
+    //绘制的位置
+    int x = src.cols/6;
+    int y = src.rows/6;
+    Point p = Point(x,y);
+    //定义字体
+    int font = CV_FONT_HERSHEY_COMPLEX;
+    //字体大小
+    double size1 = 1.5;
+    //字体颜色
+    Scalar color = Scalar(0,255,0);
+
+    putText(src,data,p,font,size1,color,2,LINE_8);
+}
+//绘制随机线
+void myRanLine()
+{
+    RNG rng (-1);
+    Point p1 ;
+    Point p2 ;
+
+    int i =0;
+    char c = 0;
+    while( (i++)<20)
+    {
+         p2.y = rng.uniform(0,src.rows);
+         p1.y = rng.uniform(0,src.rows);
+         p2.x = rng.uniform(0,src.cols);
+         p1.x = rng.uniform(0,src.cols);
+
+         //确定线条颜色
+         Scalar color = Scalar(rng.uniform(0,255),rng.uniform(0,255),rng.uniform(0,255));
+
+         //把点和颜色关联起来
+         line(src,p1,p2,color,2,LINE_8);
+
+         imshow("src",src);
+
+         c = waitKey(30);
+
+         if(c == 27)
+             break;
+    }
+}
+
+int main(int argc, char *argv[])
+{
+    src = imread("lover.jpg");
+
+    if(!src.data)
+    {
+        cout<<"src error"<<endl;
+        return -1;
+    }
+
+    namedWindow("src",CV_WINDOW_AUTOSIZE);
+
+    //函数调用
+//    myline();
+//    myRect();
+//    myEag();
+//    myCircle();
+//    myText();
+    myRanLine();
+
+    imshow("src",src);
+
+  waitKey(0);
+
+    return 0;
+}
+
+
+/////////////////////////////////////////
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int pro = 1;
+int max1 = 100;
+int s = 1;
+
+Mat dst;
+Mat src;
+
+void fun(int,void*)
+{
+    s = pro * 2 + 1;
+    dst = Mat::zeros(src.size(),src.type());
+    cvtColor(src,dst,CV_BGR2GRAY);
+    blur(dst,dst,Size(11,11),Point(-1,-1));
+
+    Mat dst1 = Mat::zeros(dst.size(),dst.type());
+    Canny(dst,dst1,0,s,3,false);
+
+    imshow("src",dst1);
+}
+
+int main(int argc, char *argv[])
+{
+    Mat src = imread("lover.jpg");
+
+    if(!src.data)
+    {
+        cout<<"src err"<<endl;
+        return -1;
+    }
+
+    namedWindow("src",CV_WINDOW_AUTOSIZE);
+    imshow("src",src);
+
+    createTrackbar("bar","src",&pro,max1,fun);
+
+    waitKey(0);
+
+    return 0;
+}
+
+////////////////////////////////////图片校验
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+
+int main(int argc, char *argv[])
+{
+    
+    Mat src= imread("lover.jpg");
+
+    if(!src.data)
+    {
+        cout<<"src err"<<endl;
+        return -1;
+    }
+    namedWindow("src",CV_WINDOW_AUTOSIZE);
+
+
+    Mat temp = imread("1.jpg");
+
+    if(!temp.data)
+    {
+        cout<<"temp err"<<endl;
+    }
+
+    namedWindow("temp",CV_WINDOW_AUTOSIZE);
+    imshow("temp",temp);
+
+    //取得高度与宽度  为存结果的对象服务
+    int height = src.rows - temp.rows +1;
+    int width = src.cols -temp.cols+1;
+    Mat result = Mat(width,height,CV_32FC1);
+
+    int method = TM_SQDIFF;
+    matchTemplate(src,temp,result,method);
+    //参数三:存结果的对象
+    //参数四：算法
+
+    //定义最小点
+    Point maxPoint;
+    Point minPoint;
+    double max1 ,min1;
+
+    //到结果对象里找最大和最小值  以及二者的坐标
+    minMaxLoc(result,&min1,&max1,&minPoint,&maxPoint);
+
+    //定义基准点
+    Point tempLoc;
+
+    //如果采用的一下俩种算法则需要  一些特殊操作
+    if(method == TM_SQDIFF || TM_SQDIFF_NORMED)
+    {
+        tempLoc = minPoint;
+    }
+    else
+    {
+        tempLoc = maxPoint;
+    }
+
+    //给原图像加一个框
+    rectangle(src,Rect(tempLoc.x,tempLoc.y,temp.cols,temp.rows),Scalar(0,0,255),2,LINE_8  );
+
+    imshow("src",src);
+
+    waitKey(0);
+
+    return 0;
+}
+
+
+////////////////////////////////////视频校验
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+
+int main(int argc, char *argv[])
+{
+    //创建多媒体对象
+    VideoCapture v;
+    Mat src;
+
+    if(!v.open("01.mp4"))
+    {
+        cout<<"open false "<<endl;
+        return -1;
+    }
+
+    //定义按键和窗口
+    char c = 0;
+    namedWindow("src",CV_WINDOW_AUTOSIZE);
+
+    //读取模板并判断
+    Mat temp = imread("01.jpg");
+    if(!temp.data)
+    {
+        cout<<"temp err"<<endl;
+    }
+    namedWindow("temp",CV_WINDOW_AUTOSIZE);
+    imshow("temp",temp);
+
+    while(v.read(src))  //开始读取
+    {
+        c= waitKey(3);
+
+        //取得高度与宽度  为存结果的对象服务
+        int height = src.rows - temp.rows +1;
+        int width = src.cols -temp.cols+1;
+        Mat result = Mat(width,height,CV_32FC1);
+
+        int method = TM_SQDIFF;
+        matchTemplate(src,temp,result,method);
+        //参数三:存结果的对象
+        //参数四：算法
+
+        //定义最小点
+        Point maxPoint;
+        Point minPoint;
+        double max1 ,min1;
+
+        //到结果对象里找最大和最小值  以及二者的坐标
+        minMaxLoc(result,&min1,&max1,&minPoint,&maxPoint);
+
+        //定义基准点
+        Point tempLoc;
+
+        //如果采用的一下俩种算法则需要  一些特殊操作
+        if(method == TM_SQDIFF || TM_SQDIFF_NORMED)
+             tempLoc = minPoint;
+        else
+            tempLoc = maxPoint;
+
+        //给原图像加一个框
+        rectangle(src,Rect(tempLoc.x,tempLoc.y,temp.cols,temp.rows),Scalar(0,0,255),2,LINE_8  );
+        //所有操作都执行完毕之后 在进行显示
+        imshow("src",src);
+
+        if(c == 27)
+            break;
+    }
+    return 0;
+}
+
+
+int pro = 1;
+int max1 = 50;
+
+void fun(int ,void *)
+{
+    switch (pro) {
+    case 1:
+        
+        
+        break;
+    default:
+        break;
+    }
+}
+
+/////////////////////////进度条实现模式匹配
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+
+int pro = 0;
+int max1 = 5;
+
+void fun(int ,void *)
+{
+//    switch (pro) {
+//    case 1:
+//        pro = TM_SQDIFF;
+//        break;
+//    case 2:
+//        pro = TM_SQDIFF_NORMED;
+//        break;
+//    case 3:
+//        pro = TM_CCORR;
+//        break;
+//    case 4:
+//        pro = TM_CCORR_NORMED;
+//        break;
+//    case 5:
+//        pro = TM_CCOEFF;
+//        break;
+//    case 6:
+//        pro = TM_CCOEFF_NORMED;
+//        break;
+//    default:
+//        pro = TM_SQDIFF;
+//        break;
+//    }
+}
+
+int main(int argc, char *argv[])
+{
+    //创建多媒体对象
+    VideoCapture v;
+    Mat src;
+
+    if(!v.open("01.mp4"))
+    {
+        cout<<"open false "<<endl;
+        return -1;
+    }
+
+    //定义按键和窗口
+    char c = 0;
+    namedWindow("src",CV_WINDOW_AUTOSIZE);
+
+    //读取模板并判断
+    Mat temp = imread("01.jpg");
+    if(!temp.data)
+    {
+        cout<<"temp err"<<endl;
+    }
+    namedWindow("temp",CV_WINDOW_AUTOSIZE);
+    imshow("temp",temp);
+
+    while(v.read(src))  //开始读取
+    {
+        c= waitKey(3);
+
+        //取得高度与宽度  为存结果的对象服务
+        int height = src.rows - temp.rows +1;
+        int width = src.cols -temp.cols+1;
+        Mat result = Mat(width,height,CV_32FC1);
+
+        createTrackbar("bar","src",&pro,max1,fun);
+        int method = pro;
+        matchTemplate(src,temp,result,method);
+        //参数三:存结果的对象
+        //参数四：算法
+
+        //定义最小点
+        Point maxPoint;
+        Point minPoint;
+        double max1 ,min1;
+
+        //到结果对象里找最大和最小值  以及二者的坐标
+        minMaxLoc(result,&min1,&max1,&minPoint,&maxPoint);
+
+        //定义基准点
+        Point tempLoc;
+
+        //如果采用的一下俩种算法则需要  一些特殊操作
+        if(method == TM_SQDIFF || TM_SQDIFF_NORMED)
+             tempLoc = minPoint;
+        else
+            tempLoc = maxPoint;
+
+        //给原图像加一个框
+        rectangle(src,Rect(tempLoc.x,tempLoc.y,temp.cols,temp.rows),Scalar(0,0,255),2,LINE_8  );
+        //所有操作都执行完毕之后 在进行显示
+        imshow("src",src);
+
+        if(c == 27)
+            break;
+    }
+    return 0;
+}
+
+
+
+
+
+
+
+
+

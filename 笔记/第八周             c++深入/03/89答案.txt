@@ -1,0 +1,323 @@
+/*********************************************************
+				day8
+
+**********************************************************/
+
+
+//练习：做两个数的除法，函数返回值返回结果
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+template<typename T>
+T div(T a, T b)
+{
+    return a/b;
+}
+
+int main()
+{
+    cout<<div<int>(10,4)<<endl;
+    cout<<div<float>(10,4)<<endl;
+    return 0;
+}
+
+
+
+
+练习：增删改查
+1.定义链表类Link
+2.私有内部结构体Node{T data, Node* pNext, Node* pFront}
+3.私有成员指针pHead  pTail
+4.公有函数add(T data)向尾部添加元素
+5.公有函数重载[] 返回 指定位置的数据,并可以通过[]修改对应位置的数据
+6.公有函数erase(index)删除index位置的元素
+7.公有函数erase(int start, T data)从start位置开始查找删除链表中data的元素
+8.公有函数size()返回链表的长度
+
+#ifndef LINK
+#define LINK
+
+template<typename T>
+class Link
+{
+private:
+    struct Node
+    {
+        Node()
+        {}
+        Node(T data):
+            data(data),
+            pNext(NULL),
+            pFront(NULL)
+        {}
+        T data;
+        Node* pNext;
+        Node* pFront;
+    };
+public:
+    Link():mSize(0)
+    {
+        Node* pNode = new Node();
+        pHead = pNode;
+        pTail = pNode;
+    }
+    
+    Link& add(T data)
+    {
+        Node* pNode = new Node(data);
+        pTail->pNext = pNode;
+        pNode->pFront = pTail;
+        pTail = pNode;
+        mSize++;
+        return *this;
+    }
+    
+    int size()
+    {
+        return mSize;
+    }
+    
+    T& operator[](int index)
+    {
+        Node* pNode = find(index);
+        return pNode->data;
+    }
+    
+    Link& erase(int index)
+    {
+         Node* pNode = find(index);
+         deleteNode(pNode);
+         return *this;
+    }
+    
+    Link& erase(int start, const T& data)
+    {
+        Node* pNode = find(start);
+        for(int i = start;i < mSize;i++)
+        {
+            if(pNode->data == data)//这样使用模板是不科学的
+            {
+                deleteNode(pNode);
+                mSize--;
+                break;
+            }
+            pNode = pNode->pNext;
+        }
+        return *this;
+    }
+private:
+    Node* find(int index)
+    {
+        Node* pNode = pHead->pNext;
+        for(int i = 0;i < index;i++)
+        {
+            pNode = pNode->pNext;
+        }
+        return pNode;
+    }
+    void deleteNode(Node* pNode)
+    {
+        if(pNode == pTail)
+        {
+            pTail = pTail->pFront;
+            pTail->pNext = NULL;
+            delete pNode;
+        }
+        else
+        {
+            pNode->pFront->pNext = pNode->pNext;
+            pNode->pNext->pFront = pNode->pFront;
+            delete pNode;
+        }
+    }
+private:
+    Node* pHead;
+    Node* pTail;
+    int mSize;
+};
+
+#endif // LINK
+
+
+
+
+
+/*********************************************************
+				day9
+
+**********************************************************/
+2.6 自定义链表类中添加迭代器遍历
+#ifndef LINK
+#define LINK
+
+template<typename T>
+class Link
+{
+private:
+    struct Node
+    {
+        Node()
+        {}
+        Node(T data):
+            data(data),
+            pNext(NULL),
+            pFront(NULL)
+        {}
+        T data;
+        Node* pNext;
+        Node* pFront;
+    };
+public:
+    class iterator
+    {
+    friend class Link;
+    private:
+        Node* pNode;
+    public:  
+        bool operator!=(const iterator& other)
+        {
+            return pNode != other.pNode;
+        }
+        void operator++(int a)
+        {
+            pNode = pNode->pNext;
+        }
+        T* operator->()
+        {
+            return &(pNode->data);
+        }
+        T& operator*()
+        {
+            return pNode->data;
+        }
+    };
+    iterator begin()
+    {
+        iterator i;
+        i.pNode = pHead->pNext;
+        return i;
+    }
+    
+    iterator end()
+    {
+        iterator i;
+        i.pNode = NULL;
+        return i;
+    }
+    Link():mSize(0)
+    {
+        Node* pNode = new Node();
+        pHead = pNode;
+        pTail = pNode;
+    }
+    
+    Link& add(T data)
+    {
+        Node* pNode = new Node(data);
+        pTail->pNext = pNode;
+        pNode->pFront = pTail;
+        pTail = pNode;
+        mSize++;
+        return *this;
+    }
+    
+    int size()
+    {
+        return mSize;
+    }
+    
+    T& operator[](int index)
+    {
+        Node* pNode = find(index);
+        return pNode->data;
+    }
+    
+    Link& erase(int index)
+    {
+         Node* pNode = find(index);
+         deleteNode(pNode);
+         return *this;
+    }
+    
+    Link& erase(int start, const T& data)
+    {
+        Node* pNode = find(start);
+        for(int i = start;i < mSize;i++)
+        {
+            if(pNode->data == data)//这样使用模板是不科学的
+            {
+                deleteNode(pNode);
+                mSize--;
+                break;
+            }
+            pNode = pNode->pNext;
+        }
+        return *this;
+    }
+private:
+    Node* find(int index)
+    {
+        Node* pNode = pHead->pNext;
+        for(int i = 0;i < index;i++)
+        {
+            pNode = pNode->pNext;
+        }
+        return pNode;
+    }
+    void deleteNode(Node* pNode)
+    {
+        if(pNode == pTail)
+        {
+            pTail = pTail->pFront;
+            pTail->pNext = NULL;
+            delete pNode;
+        }
+        else
+        {
+            pNode->pFront->pNext = pNode->pNext;
+            pNode->pNext->pFront = pNode->pFront;
+            delete pNode;
+        }
+    }
+private:
+    Node* pHead;
+    Node* pTail;
+    int mSize;
+};
+
+#endif // LINK
+
+综合练习：21点
+1、使用单例模式管理扑克属性数据 PokerManager
+	1.私有成员vector保存花色
+	2.私有成员vector保存点数
+	3.私有成员map保存分值
+	4.定义相应的get函数
+	5.构造函数中对成员赋值
+2、定义扑克结构体Poker 私有属性 花色（红桃等）、点数（A 2 3 J Q等）、分值（21点每个点数的分值）
+	1.构造函数传入花色和点数（大王  大：花色  王：点数）
+	2.构造函数中根据点数自动分配分值属性，可将14种点数以键（点数）值（分值）对形式存放到map中
+3、定义裁判类Judge
+	1.私有成员有stack容器适配器存放随机顺序的54张牌
+	2.构造函数中向stack添加54张随机顺序的牌
+	3.公有函数deal()发牌，每调用一次从stack中pop发出一张牌
+		
+4、定义玩家类Player
+	1.私有成员vector容器存放手中的牌
+	2.私有成员name
+	3.公有函数计算当前手牌总分值
+	4.公有函数显示手中的牌
+	5.公有函数addPoker()传入一个Poker对象存入vector容器中
+5、主逻辑类Logic
+	1.私有成员Judge对象
+	2.私有成员vector存放Player对象
+	3.构造函数中向私有成员vector添加Player对象
+	4.公有函数run()负责游戏主要逻辑while(1)
+	4.1 询问每个玩家是否要牌，放弃要牌则失去以后询问机会
+	4.2 Judeg对象deal()一个牌给要牌的玩家addPoker()
+	4.3 校验要牌玩家的分值是否超过21点，超过则提前出局，失去以后询问机会
+	4.4 显示所有玩家手牌
+	4.5	如果没有可询问对象，则停止游戏
+	4.6 循环回4.1

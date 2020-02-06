@@ -1,0 +1,496 @@
+//二进制 复制音频文件
+void MainWindow::on_pushButton_copy_clicked()
+{
+    QFile src("d:/farsight/music/src.mp3");
+    QFile dst("c:/Users/mudonghai/Desktop/dst.mp3");
+    if(src.open(QIODevice::ReadOnly) && dst.open(QIODevice::WriteOnly))
+    {
+        QDataStream in(&src);
+        QDataStream out(&dst);
+        char buf[MAX_LEN];
+        while(!in.atEnd())
+        {
+            int size = in.readRawData(buf, MAX_LEN);
+            if(size == -1)
+            {
+                qDebug()<<"读取失败";
+                break;
+            }
+            out.writeRawData(buf, size);
+        }
+        qDebug()<<"完成";
+    }
+    src.close();
+    dst.close();
+}
+
+补充：
+//////////////////////////
+run函数 线程的逻辑
+线程继承QObject
+
+什么叫线程安全：同步 异步  资源的争抢
+
+qt中的信号与槽是线程安全的 
+
+信号的参数，槽可以不全用，但是槽要的参数，信号必须得给，信号的参数可以多于槽的参数个数
+
+
+一、线程
+什么时候用线程？ 多个任务同时进行
+线程
+进程
+进程里包含线程 
+2 线程结束了 进程不一定结束
+3 进程结束 线程一定结束
+
+
+进程里肯定有线程，至少有一个主线程
+ 一个教室是一个进程，每个学生都是单独 独立的线程
+
+1、线程使用
+
+1)要开线程 必须先继承  后重写run 函数
+2)线程是原子操作
+
+示例：ThreadStart
+1.定义线程 继承QThread，重写run函数，run 中线程要执行的逻辑
+
+2.启动和停止线程，start()  terminate()
+
+3.使用信号(自定义)与槽通信
+//要使用信号与槽的话，需添加此宏
+需要类最前   加宏Q_OBJECT
+
+见0109Qthread；
+
+
+
+示例：
+ my_thread = new Thread_my(this);
+ connect(my_thread, SIGNAL(sendInfo(int)), this, SLOT(receiveInfo(int)));
+	
+开启线程
+void MainWindow::on_pushButton_start_clicked()
+{
+    my_thread->start();
+}
+
+关闭线程
+void MainWindow::on_pushButton_stop_clicked()
+{
+    my_thread->terminate();
+}
+
+槽函数，接受信号
+void MainWindow::receiveInfo(int i)
+{
+    ui->label->setText(QString::number(i));
+}
+
+自定义线程类
+class Thread_my : public QThread
+{
+    Q_OBJECT
+public:
+    Thread_my(QObject* parent);
+    ~Thread_my();
+
+    void run();//重写run函数
+
+ signals://自定义信号
+    void sendInfo(int i);
+
+};
+//线程的cpp文件
+
+Thread_my::Thread_my(QObject *parent)
+{
+
+}
+
+Thread_my::~Thread_my()
+{
+
+}
+
+void Thread_my::run()
+{
+    int i = 0;
+    while(true)
+    {
+        i++;
+        sleep(1);
+        emit sendInfo(i);//发送信号
+    }
+}
+
+2、多线程控制
+1. 原子操作:线程直接对变量本身操作
+   非原子操作:线程复制一个变量的副本，对副本操作，再写回原来的变量
+		
+2.互斥锁 QMutex类  作用：解决由于覆盖，导致的结果不正确
+									目的：保护一个对象，同一时间只有一个线程可以访问它。
+									当多个线程访问共享内存时，应使用锁讲对共享变量的操作代码包裹，易保证同步访问共享变量；
+									c++中引起线程安全的共享资源有两种：全局变量和静态变量。
+									
+示例：ThreadMutex
+
+main文件：
+int DataSize = 100;
+int buffer = 0;
+QMutex mutex;
+
+int main(int argc, char *argv[])
+{
+    QApplication a(argc, argv);
+    productor producer;
+    Consumer consumer;
+    consumer.start();
+    producer.start();
+
+
+    producer.wait();
+    consumer.wait();
+
+    return a.exec();
+}
+cpp文件：
+
+#include "consumer.h"
+#include <QMutex>
+#include <QDebug>
+
+extern int DataSize ;
+extern int buffer;
+extern QMutex mutex;
+
+Consumer::Consumer()
+{
+
+}
+
+Consumer::~Consumer()
+{
+
+}
+
+void Consumer::run()
+{
+    for(int i = 0 ; i <DataSize; i++)
+    {
+        mutex.lock();
+        buffer--;
+        qDebug()<<"consumer "<<buffer;
+        mutex.unlock();
+
+    }
+
+}
+头文件：
+#ifndef CONSUMER_H
+#define CONSUMER_H
+#include <QThread>
+
+class Consumer : public QThread
+{
+	Q_OBJECT
+public:
+    Consumer();
+    ~Consumer();
+    void run();
+};
+
+#endif // CONSUMER_H
+
+
+
+
+
+二、网络编程
+补充：
+//////////////
+pro文件里添加
+QT += network
+
+1、获得本机网络信息
+
+2、UDP
+示例：UDPChat
+1.QUdpSocket Qt通过QUdpSocket实现UDP协议编程
+
+示例：
+#include <QHostInfo>
+#include <QList>
+#include <QNetworkInterface>
+
+   //主机信息
+    QString localHostName = QHostInfo::localHostName();//获得主机名称
+    ui->label_hiostname->setText(localHostName);
+
+    QHostInfo info = QHostInfo::fromName(localHostName);//获得主机信息
+
+    QList<QHostAddress> list = info.addresses();//获得本地主机的所有ip地址
+    for(int i = 0 ; i <list.size(); i++)
+    {
+        if(list[i].protocol() == QAbstractSocket::IPv4Protocol)//判断ip是不是iPv4
+        {
+            ui->listWidget_ip->addItem(list[i].toString());//将ipv4转换成字符串
+        }
+
+    }
+	
+=============================================================	
+#include <QNetworkInterface>
+
+	
+    //网络接口信息
+    QString interfaceinfo = "";
+    QList<QNetworkInterface> interfaceList = QNetworkInterface::allInterfaces();
+    for(int i = 0;i < interfaceList.size();i++)
+    {
+        QNetworkInterface interface = interfaceList.at(i);
+        interfaceinfo += "设备";
+        interfaceinfo += interface.name();
+        interfaceinfo += "\n";
+        
+        interfaceinfo += "硬件地址";
+        interfaceinfo += interface.hardwareAddress();
+        interfaceinfo += "\n";
+        
+        QList<QNetworkAddressEntry> entryList = interface.addressEntries();
+        for(int j = 0;j < entryList.size();j++)
+        {
+            QNetworkAddressEntry entry = entryList.at(j);
+            interfaceinfo += "IP地址";
+            interfaceinfo += entry.ip().toString();
+            interfaceinfo += "\n";
+            
+            interfaceinfo += "子网掩码";
+            interfaceinfo += entry.netmask().toString();
+            interfaceinfo += "\n";
+            
+            interfaceinfo += "广播地址";
+            interfaceinfo += entry.broadcast().toString();
+            interfaceinfo += "\n";
+        }
+    }
+    ui->label_interface->setText(interfaceinfo);
+	-----------------------------------------------------------------------------------------------------
+
+2.创建对象 explicit QUdpSocket(QObject *parent = 0);
+
+3.发送数据
+inline qint64 writeDatagram(
+	const QByteArray &datagram, //发送的数据  可以使用QString进行转换
+	const QHostAddress &host, 	//接收端服务器的类型  QHostAddress::Broadcast广播
+	quint16 port								//接收端端口号
+);
+
+构造：
+socket = new QUdpSocket(this);
+    QHostAddress addr("192.168.1.28");
+    socket->bind(addr, 55555,QUdpSocket::ShareAddress);//使用本机55555端口来接收信息
+    connect(socket, SIGNAL(readyRead()), this, SLOT(receiveData()));
+	
+发送：
+void MainWindow::on_pushButton_send_clicked()
+{
+    //QHostAddress addr("192.168.1.136");
+    QString data = ui->lineEdit->text();
+    QByteArray senddata = data.toLocal8Bit();
+    int length = socket->writeDatagram(
+                senddata,
+                QHostAddress::Broadcast,//指定向广播地址发送
+                55555
+                );
+}
+槽函数：
+void MainWindow::receiveData()
+{
+   
+      while(socket->hasPendingDatagrams())//判断socket是否有数据报 可读
+    {
+        QByteArray data;
+        QHostAddress addr;// 显示发来内容端的ip
+        data.resize(socket->pendingDatagramSize());
+        socket->readDatagram(data.data(), data.size(),&addr);
+        ui->textBrowser->append(addr.toString()+QString::fromLocal8Bit(data));
+		//addr.toString() udp只有ip
+    }
+}
+
+4.接收数据
+4.1 连接信号与槽 connect(socket, SIGNAL(readyRead()), this, SLOT(receiveData()));
+	QUdpSocket也是QIODevice的子类，当有数据到达时发出readyRead信号
+4.2 槽函数 
+	bool hasPendingDatagrams() const;判断是否收到数据报
+	qint64 pendingDatagramSize() const;获得数据报长度 数据长度
+	读取数据
+	qint64 readDatagram(
+		char *data, 						//读取数据到data中
+		qint64 maxlen, 					//最大长度
+		QHostAddress *host = 0, //发送广播的主机
+		quint16 *port = 0				//端口
+	);
+示例：读取数据
+while(socket->hasPendingDatagrams())//判断socket是否有数据报 可读
+{
+    QByteArray data;
+    data.resize(socket->pendingDatagramSize());
+    socket->readDatagram(data.data(), data.size());
+    ui->lineEdit->setText(QString::fromLocal8Bit(data));
+}
+
+5.绑定监听，参数一是本地主机
+bool bind(const QHostAddress &address, quint16 port = 0, BindMode mode = DefaultForPlatform);
+
+========================================================================
+3、TCP
+示例：TcpServer TcpClient
+
+1.QTcpServer tcp服务器类    QTcpSocket tcp套接字类
+
+2.服务器监听
+	bool listen(const QHostAddress &address = QHostAddress::Any, quint16 port = 0);
+
+3.服务器收到客户端连接后发出信号newConnection()
+
+4.服务器获得与客户端连接套接字QTcpSocket *nextPendingConnection();
+
+5.tcp套接字连接服务器
+ void connectToHost(const QHostAddress &address, quint16 port, OpenMode mode = ReadWrite);
+
+6.tcp套接字连接成功发出信号connected()
+
+7.tcp套接字收到数据发出信号readyRead()
+
+8.tcp套接字断开连接发出信号disconnected()
+
+9.tcp套接字读写数据
+	QByteArray readAll();
+	qint64 write(const char *data, qint64 len);
+	
+示例：
+客户端
+//头文件：
+private slots:
+    void on_pushButton_connect_clicked();
+    
+    void socket_connect();
+    void socket_disconnect();
+    void socket_read();
+    void on_pushButton_send_clicked();
+    
+private:
+    Ui::MainWindow *ui;
+    QTcpSocket* socket;
+
+//cpp文件：
+void MainWindow::on_pushButton_connect_clicked()
+{
+    socket = new QTcpSocket(this);
+    //连接主机 但是不是马上连接成功
+    socket->connectToHost(QHostAddress(ui->lineEdit->text()), 55555, QTcpSocket::ReadWrite);
+    //当socket连接成功之后，会发出connected信号
+    socket->connect(socket, SIGNAL(connected()), this, SLOT(socket_connect()));
+}
+
+void MainWindow::socket_connect()
+{
+    //连接断开连接的信号
+    connect(socket, SIGNAL(disconnected()), this, SLOT(socket_disconnect()));
+    //连接收到数据的信号
+    connect(socket, SIGNAL(readyRead()), this, SLOT(socket_read()));
+}
+
+void MainWindow::socket_disconnect()
+{
+    qDebug()<<"断开连接";
+}
+
+void MainWindow::socket_read()
+{
+    QByteArray data = socket->readAll();
+    ui->textBrowser->append(QString::fromLocal8Bit(data));
+}
+
+void MainWindow::on_pushButton_send_clicked()
+{
+    QString data = ui->lineEdit_msg->text();
+//    socket->write(data.toLocal8Bit().data(), data.toLocal8Bit().size());
+        socket->write(data.toLocal8Bit().data());
+}
+服务器：
+//头文件：
+private:
+    Ui::MainWindow *ui;
+    
+    QTcpServer* server;
+    QTcpSocket* client;
+    
+private slots:
+    void newConnect();
+    void on_pushButton_send_clicked();
+    void socket_disconnect();
+    void socket_read();
+	
+//cpp文件：
+MainWindow::MainWindow(QWidget *parent) :
+    QMainWindow(parent),
+    ui(new Ui::MainWindow)
+{
+    ui->setupUi(this);
+    
+    server = new QTcpServer(this);
+    server->listen(QHostAddress::Any, 55555);//监听任意ip地址
+    //连接新客户端连接信号
+    connect(server, SIGNAL(newConnection()), this, SLOT(newConnect()));
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+void MainWindow::newConnect()
+{
+    client = server->nextPendingConnection();
+    connect(client, SIGNAL(disconnected()), this, SLOT(socket_disconnect()));
+    connect(client, SIGNAL(readyRead()), this, SLOT(socket_read()));
+    qDebug()<<"客户端连接";
+}
+
+void MainWindow::on_pushButton_send_clicked()
+{
+    QString data = ui->lineEdit->text();
+    client->write(data.toLocal8Bit().data(), data.toLocal8Bit().size());
+}
+
+void MainWindow::socket_disconnect()
+{
+    qDebug()<<"断开连接";
+}
+
+void MainWindow::socket_read()
+{
+    QByteArray data = client->readAll();
+    ui->textBrowser->append(QString::fromLocal8Bit(data));
+}
+
+
+局域网聊天室：
+1.模拟客户端，输入待连接的ip，连接服务器
+
+2.模拟服务器， 如果有其他用户连接你，那么所有连接你的用户的ip显示到listwight中，
+
+3.双击列表项，进入聊天页面
+
+
+
+
+
+
+
+
+

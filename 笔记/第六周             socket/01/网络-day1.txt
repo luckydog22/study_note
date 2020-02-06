@@ -1,0 +1,321 @@
+
+课程安排： 6天 
+1. 网络基础、udp 
+2. tcp 
+3. 并发服务器  
+4. sqlite3.     
+5. 在线电子词典。  学生管理系统。 
+
+
+
+
+一、 网络体系结构 
+1.网络体系结构：网络的层次结构和每层所使用协议的集合
+
+2.两类网络模型： 
+1） OSI 模型： 
+	应用层   -----  面向应用
+	表示层   ---- 面向服务
+	会话层   ---- 面向服务
+	传输层   -----  面向通信 
+	网络层   ---- 
+	数据链路层  ---  低3层：通信子网 
+	物理层      --- 
+	
+2） tcp/ip 四层模型：
+	应用层：是分层模型中的最高层。与传输层进行数据交流。 
+	传输层：负责实现应用程序之间的通信服务。 
+	网络层：负责在主机之间的通信中，选择数据包的传输路径。 
+	网络接口层：是TCP/IP的最底层，负责将二进制流转换为数据帧，并进行数据帧的发送和接收。数据帧是网络传输的基本单元。  
+	
+3）4层模型中，每层包含的协议：
+应用层：    FTP   HTTP   DNS   SMTP 
+传输层：    TCP   UDP 
+网络层：    IP    ICMP   IGMP
+网络接口层：   ARP
+
+4） TCP/IP 模型边界特性：
+a）地址边界特性： 它将逻辑IP地址与底层网络的硬件地址分开。 
+b）操作系统边界特性： 它将网络应用与协议软件分开。 
+
+3.TCP与UDP 
+相同： 都是传输层协议。 
+不同： 
+TCP : 面向连接的，可靠的传输协议。 
+UDP : 无连接的，不可靠的传输协议。 
+
+
+
+
+二、 网络编程基础  
+
+1. socket 
+1.1 套接字： 是特殊的IO 接口，也是一种文件描述符。 通过函数获取： int sockfd = socket(); 
+	每个 socket 都可用网络地址结构来表示。随后各种操作都是通过socket 描述符来实现的。 
+	网络地址结构： 
+	{
+		协议、本地地址、本地端口 
+	}
+
+1.2  套接字类型： 
+	SOCK_STREAM      流式套接字  
+	SOCK_DGRAM       数据报套接字 
+	SOCK_RAW         原始套接字  
+
+1.3  编程接口 
+头文件：   #include <sys/socket.h>
+函数原型： int socket(int domain, int type, int protocol);
+参数：     domain : 协议    AF_LOCAL  AF_INET   AF_INET6   等。 
+		   type   : 套接字类型。 
+		   protocol:   一般写0. 
+返回值:    成功： 套接字描述符。      失败：-1
+示例：    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+1.4 端口  
+	1） 端口（号）是一个无符号短整型数，取值范围在 0 ~ 65535 之间。 
+	2） 端口号是系统的一种资源。 0 ~ 1023 ,一般被系统程序使用。 
+	3） TCP 端口号 和 UDP 端口号独立，互不影响。 
+	*4） 端口号可以用来代表主机内部的某个套接字。 端口用来唯一标识一个套接字。 
+
+
+2. IP 地址：         构成： 网络号 + 主机号  
+
+2.1 分类 
+A 类地址： 1字节网络号 + 3字节主机号。 网络号以'0'为开头。 0.0.0.0 ~ 127.0.0.0
+B 类地址： 2字节网络号 + 2字节主机号。 网络号以'10'为开头。 128.0.0.0 ~ 191.255.255.255
+C 类地址： 3字节网络号 + 1字节主机号。 网络号以'110'为开头。 192.0.0.0 ~ 223.255.255.255
+D 类地址： 一般在广播/组播中使用。     网络号以'1110'为开头。 224.0.0.0 ~ 
+E 类地址： 保留。 
+
+2.2 表达方式  
+点分十进制： 192.168.1.22 
+整数表示  :  0xc0a80116         
+ 
+2.3 两种表达方式的转换函数：  
+       #include <sys/socket.h>
+       #include <netinet/in.h>
+       #include <arpa/inet.h>
+
+(1)点分十进制  ---> 整数   
+   int         inet_aton(const char *cp, struct in_addr *inp); 
+   in_addr_t   inet_addr(const char *cp);
+
+示例1： 
+////////////////////
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+int main()
+{
+	struct in_addr a;
+	inet_aton("192.168.1.22", &a );
+	printf("%#x\n",a.s_addr);
+}
+示例2： 
+////////////////
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+int main()
+{
+	printf("%#x",inet_addr("192.168.1.22"));
+}
+
+(2)整数形式   ---->  点分十进制  
+	char *inet_ntoa(struct in_addr in);
+
+示例： 
+//////////////////
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+int main()
+{
+	struct in_addr a;
+	inet_aton("192.168.1.22", &a );
+	printf("%#x\n",a.s_addr);
+
+	printf("change:  %s\n",inet_ntoa(a));
+}
+
+3. 网络地址结构 
+	网络地址结构
+	{
+		协议、本地地址、本地端口；
+	}
+（1）通用地址结构：
+    struct sockaddr {
+        sa_family_t sa_family;
+        char        sa_data[14];
+    };
+（2）Internet 协议地址结构：
+	struct sockaddr_in {
+		unsigned short int sin_family;  /*地址族*/
+		unsigned short int sin_port;    /*端口号*/
+		struct in_addr sin_addr;        /*IP地址*/
+		unsigned char sin_zero[8];      /*填充0，以保持与struct sockaddr 同样大小*/
+	};
+（3）IPv4 地址结构： 
+	struct in_addr {
+		in_addr_t s_addr;      // u32 network address
+	};
+
+4. 字节序      
+4.1  分类： 大端字节序、小端字节序  
+大端： 高位字节存在低地址中，低位字节存在高地址中，称为大端字节序。 
+小端： 高 .. 高.... , 低 ... 低 .... ，称为小端字节序。 
+
+网络字节序： 大端字节序。 
+主机字节序： 大部分是小端字节序。 
+
+4.2 字节序的检测 
+///////////////////
+#include <stdio.h>
+int main()
+{
+	unsigned int a = 0x1234abcd;
+	unsigned char *p = &a;
+	printf("%#x,   %p\n", *(p+0),p+0);
+	printf("%#x,   %p\n", *(p+1),p+1);
+	printf("%#x,   %p\n", *(p+2),p+2);
+	printf("%#x,   %p\n", *(p+3),p+3);
+}
+
+////////////////
+#include <stdio.h>
+union data 
+{
+	int a; 
+	char c;
+};
+int main()
+{
+	union data x; 
+	x.a = 0x1234abcd ;
+	printf("%x \n",x.c);
+}
+
+4.3 字节序的转换：
+四个转换函数：
+htons();      // 主机序 转 网络序  
+htonl();   
+ntohs();      // 网络序 转 主机序   
+ntohl();      // s 一般用来转换 端口 的字节序。 l 一般用来转 ip 地址的字节序。 
+
+各字母意义： 
+h host 主机   
+n network 网络    
+l long 
+s short    
+
+
+5. udp 
+
+5.1  发送端  
+创建套接字描述符   
+指定对方ip 和 端口  
+发送消息   
+关闭 socket  
+
+(1)  int sockfd = socket(AF_INET, SOCK_DGRAM,0); 
+(2)  toaddr.sin_port;    toaddr.sin_addr.s_addr; 
+*(3)  sendto(); 
+函数原型：  ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
+参数        参数1： 自己的 sockfd . 
+			参数2： 要发送的内容。 
+			参数3： 内容的长度。 
+			参数4： 0 
+			参数5： 对方 网络地址结构。 
+			参数6： 地址结构长度。 
+返回值：     On  success,  these  calls  return  the  number of characters sent.    失败： -1 
+(4)  close(sockfd);
+
+
+5.2  接收端  
+创建套接字描述符   
+绑定自己地址和 端口   
+接收消息 
+关闭 socket 
+
+ (1) int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+*(2) int n = bind(sockfd, (struct sockaddr *)&myaddr, len );
+*(3) recvfrom 
+函数原型： ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
+参数        参数1： 自己的 sockfd . 
+			参数2： 接收的内容存放的位置。 
+			参数3： 内容的长度。 
+			参数4： 0 
+			参数5： 对方 网络地址结构（消息从哪来的）。 
+			参数6： 地址结构长度（是一个指针，需要存放地址） 
+(4) close(sockfd);
+
+示例代码： 
+///////// send.c //////
+#include <stdio.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+int main()
+{
+	int sockfd = socket(AF_INET, SOCK_DGRAM, 0);    // 创建套接字描述符  
+	if(sockfd < 0)
+	{
+		perror("socket");
+		return -1;
+	}
+
+	struct sockaddr_in  toaddr;
+	toaddr.sin_family = AF_INET; 
+	toaddr.sin_port = htons(23456);
+	toaddr.sin_addr.s_addr = inet_addr("127.0.0.1");     // 指定对方地址结构  
+
+	char buf[100] = "Hello xiaoming~";
+	sendto(sockfd, buf, sizeof(buf),0, (struct sockaddr *)&toaddr,16);    // 发送  
+	close(sockfd);
+	return 0;
+}
+
+//////// recv.c ///////
+#include <stdio.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+int main()
+{
+	int sockfd = socket(AF_INET, SOCK_DGRAM, 0);    // 创建套接字描述符
+	if(sockfd < 0)
+	{
+		perror("socket");
+		return -1;
+	}
+
+	struct sockaddr_in myaddr,youaddr;    
+	myaddr.sin_family = AF_INET;                
+	myaddr.sin_port = htons(23456);
+	myaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	if(bind(sockfd, (struct sockaddr *)&myaddr,16) < 0 )      // 绑定自己 地址结构 和 套接字
+	{
+		perror("bind");
+		return -1;
+	}
+
+	int len = sizeof(struct sockaddr);
+	char buf[100] = {0};
+	recvfrom(sockfd,buf,sizeof(buf),0, (struct sockaddr *)&youaddr, &len);      //接收   
+	printf("receive: %s\n",buf);
+	close(sockfd);
+	return 0;
+}
+
+
+//练习：使用 udp 方式编写聊天程序。 
+
+
+
+
+

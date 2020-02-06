@@ -1,0 +1,355 @@
+
+进程间通信： 管道、信号、消息队列、共享内存、信号量、套接字  
+
+传统的进程间通信： 管道、信号  
+IPC 通信： 消息队列、共享内存、信号量 
+BSD ：     套接字
+
+
+一、信号   
+
+1. 什么是信号：  是在软件层面上对中断机制的一种模拟。 是一种异步通信方式。 
+
+2. 信号的处理方式有以下3种：     signal(信号的值，处理方式);
+	忽略处理(SIG_IGN)、
+	捕获信号(自定义fun函数处理即可)、
+	默认处理(SIG_DFL)。 
+
+3. 信号的种类： （kill -l      man 7 signal ）
+	First the signals described in the original POSIX.1-1990 standard.
+	
+       Signal     Value     Action   Comment
+       ──────────────────────────────────────────────────────────────────────
+       SIGHUP        1       Term    Hangup detected on controlling terminal
+                                     or death of controlling process    // 挂起信号
+       SIGINT        2       Term    Interrupt from keyboard       // ctrl + c
+       SIGQUIT       3       Core    Quit from keyboard            // ctrl + \          
+       SIGILL        4       Core    Illegal Instruction           // 非法指令 
+       SIGABRT       6       Core    Abort signal from abort(3)    // 由 abort 函数引起的信号  
+       SIGFPE        8       Core    Floating point exception      // 浮点异常  
+       SIGKILL       9       Term    Kill signal                   // 必杀信号。       kill -9 12345
+       SIGSEGV      11       Core    Invalid memory reference      // 段异常、段错误    
+       SIGPIPE      13       Term    Broken pipe: write to pipe with no readers     // 管道破裂  
+       SIGALRM      14       Term    Timer signal from alarm(2)    // 闹钟信号。 由 alarm 函数产生的   
+       SIGUSR1   30,10,16    Term    User-defined signal 1
+       SIGUSR2   31,12,17    Term    User-defined signal 2         // 用户自定义信号 
+       SIGCHLD   20,17,18    Ign     Child stopped or terminated   // 子进程暂停或者终止会产生这个信号，发送给其父进程（父进程对该信号一般进行忽略处理）
+       SIGCONT   19,18,25    Cont    Continue if stopped           // 继续运行  
+       SIGSTOP   17,19,23    Stop    Stop process                  // 暂停进程  
+       SIGTSTP   18,20,24    Stop    Stop typed at tty             // ctrl + z
+
+    The signals SIGKILL and SIGSTOP cannot be caught, blocked, or ignored.  // SIGKILL  SIGSTOP 不能被捕获、阻塞、忽略。
+
+4. 信号的处理函数    
+(1) 信号处理函数：   signal  
+函数原型：  typedef void (*sighandler_t)(int);
+		sighandler_t signal(int signum, sighandler_t handler);
+参数：  参数1： 信号
+		参数2： 对该信号的处理方式。 共三种： 忽略SIG_IGN、捕获fun、默认SIG_DFL
+示例： 
+///////////////
+#include <stdio.h>
+#include <unistd.h>
+#include <signal.h>
+// 对信号的处理方式  
+void fun(int signum)
+{
+	if(signum == SIGINT)
+		printf("I'm not afraid of you !\n");
+	else if(signum == SIGTSTP)
+		printf("Hey guys!\n");
+}
+int main()
+{
+	signal(SIGINT,fun);
+	signal(SIGTSTP,fun);
+	while(1)
+	{
+		sleep(1);
+		printf("hello world!\n");
+	}
+}
+
+// 练习： 使用 signal 函数捕获信号，并处理。 
+
+(2)发送信号    kill   raise 
+函数原型：  int kill(pid_t pid, int signum);
+功能：      向 指定的进程 发送信号。 
+参数：      参数1 ： 进程号。 （4种情形）
+				pid > 0 : 向 进程号为pid的进程 发送信号。 
+				pid = 0 : 信号
+				pid = -1: 
+				pid < -1: 
+			参数2： 发送的信号是哪个。 
+返回值： 成功： 0     失败： -1  
+示例： kill(12345, SIGINT);
+
+函数原型： int raise(int signum);
+功能：     向当前进程发信号。 
+参数：     发送的信号是哪个。  
+
+示例： 
+//////////////////////
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <signal.h>
+int main(int argc,char *argv[])
+{
+	if(argc < 2)
+	{
+		printf("%s signumber\n",argv[0]);
+		return 0;
+	}
+	pid_t pid = atoi(argv[1]);
+	int signum; 
+	while(1)
+	{
+		scanf("%d",&signum);
+		kill(pid,signum);
+	}
+}
+
+// 练习： 父进程给子进程发送一个信号（自己指定即可），子进程去捕获信号，并处理。 
+#include <stdio.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <stdlib.h>
+#include <unistd.h>
+void fun()
+{
+	printf("Hey John~\n");
+	exit(0);
+}
+int main()
+{
+	pid_t id = fork();
+	if(id < 0)
+	{
+		perror("fork");
+		return -1;
+	}
+	if(id > 0)    // parent
+	{
+		sleep(2);
+		kill(id,SIGUSR1);
+		wait(NULL);
+	}
+	else   // child 
+	{
+		signal(SIGUSR1,fun);
+		while(1);
+	}
+}
+
+// 练习： 编写代码，实现功能： 统计用户在一分钟之内的输入字符的个数。 (1)定时. (2)按照屏幕提示去输入字符。 
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <unistd.h>
+int count = 0;
+void fun()
+{
+	printf("count : %d\n",count);
+	exit(0);
+}
+int main()
+{
+	signal(SIGALRM,fun);
+	alarm(10);
+	srand(time(0));
+
+	char ch,input;
+	while(1)
+	{
+		ch = rand()%26 + 'a';
+		printf ( "%c ",ch);
+		fflush(stdout);
+		input = getchar();
+		getchar();
+		if(ch == input)
+			count++;
+	}
+}
+
+
+
+二、管道  
+1. 无名管道
+ 
+1.1 特点 
+a. 只能用在具有亲缘关系的进程间使用。  
+b. 单工通信，有固定的读写端。fd[0]:读端。   fd[1]:写端。  
+c. 是特殊的文件，使用文件IO处理。不属于文件系统。无名管道存在于内核中。 
+d. 是同步通信。 如果没有读端。写入操作没有意义（执行写入操作的进程，会收到来自内核发送的信号 SIGPIPE ）
+
+1.2 系统调用  
+函数原型：  int pipe(int fd[2]);
+参数    ：  文件描述符的数组名。 
+返回值  ：  成功： 0      失败：-1 
+示例代码： 
+////////////////////////
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <unistd.h>
+int main()
+{
+	int fd[2];
+	int n = pipe(fd);      // 创建管道  
+	if(n < 0)
+	{
+		perror("pipe\n");
+		return -1;
+	}
+	pid_t id = fork();     // 然后再创建进程（子进程被创建之后，父子进程就可以使用同一个管道了）
+	if(id > 0)  // parent
+	{
+		close(fd[1]);
+		char buf[100] = {0};
+		read(fd[0],buf,sizeof(buf));  // 父进程负责读取。 
+		printf("recv: %s\n",buf);
+		wait(NULL);
+	}
+	else if(id == 0)  // child
+	{
+		close(fd[0]);
+		write(fd[1],"Welcome to Shenyang",19);    // 子进程负责写入。 
+		exit(0);
+	}
+}
+
+// 练习： 请实现父进程传递字符串给子进程，子进程将字符串变为全大写再输出。 
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <unistd.h>
+int main()
+{
+	int fd[2];
+	int n = pipe(fd);
+	if(n < 0)
+	{
+		perror("pipe\n");
+		return -1;
+	}
+
+	pid_t id = fork();
+	if(id > 0)  // parent
+	{
+		close(fd[1]);
+		char buf[100] = {0};
+		read(fd[0],buf,sizeof(buf));
+		
+		int i = 0;
+		while(buf[i] != '\0')
+		{
+			if(buf[i]>='a' && buf[i]<='z')
+				buf[i] = buf[i] -'a'+'A';
+			i++;
+		}
+
+		printf("recv: %s\n",buf);
+		wait(NULL);
+	}
+	else if(id == 0)  // child
+	{
+		close(fd[0]);
+		write(fd[1],"Welcome to Shenyang",19);
+		exit(0);
+	}
+}
+// 练习： 如果是子进程发送一整个文件内容给父进程呢？如何处理。
+
+
+2. 有名管道
+  
+2.1 特点： 
+a. 可以使用在两个无关进程间通信。  
+b. 有名管道可以通过路径名来指出，在文件系统中可见。 
+c. 有名管道遵循先入先出规则。 不支持定位操作。  
+
+2.2 函数   mkfifo 
+头文件： #include <sys/types.h>
+         #include <sys/stat.h>
+函数原型： int mkfifo(const char *pathname, mode_t mode);
+参数：     参数1： 管道文件名 
+		   参数2： 打开权限。 
+返回值：  成功： 0       失败： -1 
+示例：    mkfifo("mkfifo",O_RDWR|0777);
+
+示例代码： 
+//////// create.c /////////
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+int main()
+{
+	int x = mkfifo("./myfifo",O_RDWR|0777);
+	if(x < 0)
+		perror("mkfifo");
+	return 0;
+}
+/////////// write.c ////////////
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+int main()
+{
+	int fd = open("./myfifo",O_WRONLY);
+	if(fd < 0)
+	{
+		perror("open");
+		return -1;
+	}
+
+	write(fd,"Welcome to Shenyang",19);
+	close(fd);
+	return 0;
+}
+//////// read.c ///////
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+int main()
+{
+	int fd = open("./myfifo",O_RDONLY);
+	if(fd < 0)
+	{
+		perror("open");
+		return -1;
+	}
+	char buf[100] = {0};
+	read(fd,buf,sizeof(buf));
+	puts(buf);
+	close(fd);
+	return 0;
+}
+执行过程： 
+gcc create.c -o c 
+gcc read.c -o r 
+gcc write.c -o w 
+./c 
+./r 
+./w 
+
+// 练习： 写入的进程：正常写入一个字符串即可。 读进程，将读到的内容，变为全大写，再输出。 
+
+
+// 作业：写进程：向管道中写入一整个文件内容，读进程：将管道中的内容读出。 
+
+
+
+
+
+
+
+
+
+
+

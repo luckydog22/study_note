@@ -1,0 +1,2 @@
+getchar( );
+scanf("%c",&c);

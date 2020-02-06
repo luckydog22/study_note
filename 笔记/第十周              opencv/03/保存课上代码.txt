@@ -1,0 +1,370 @@
+
+//////////////////////////////////////////// 1 .提高亮度  单通道  和 三通道
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+
+int main(int argc, char *argv[])
+{
+    //创建src对象，保存图片
+    Mat src = imread("head3.jpg");
+    //创建一个dst对象 保存提高亮度后的三通道图片
+    Mat dst1 = Mat::zeros(src.size(),src.type());
+    //定义一个dst对象  保存提高亮度后的单通道图片
+    Mat dst = Mat::zeros(src.size(),src.type());
+
+    //验证读取是否成功
+    if(!src.data)
+        cout<<"error"<<endl;
+
+    //将src复制给dst
+    src.copyTo(dst1);
+
+    //同原图片进行降通道处理
+    cvtColor(src,dst,CV_BGR2GRAY);
+
+    //创建窗口
+    namedWindow("srcWin",CV_WINDOW_AUTOSIZE);
+    namedWindow("DstWin",CV_WINDOW_AUTOSIZE);
+
+    //显示图片
+    imshow("srcWin",src);
+
+    //原则上是对像素点的处理，先获取
+    int rows = dst.rows;
+    int cols = dst.cols;
+
+    int row = 0;
+    int col = 0;
+    uchar gray = 0;
+    //定义亮度
+    double a = 1.5;
+    double b = 20.0;
+    for(row = 0;row<rows;row++)
+    {
+        for(col = 0;col<cols;col++)
+        {
+             gray = dst.at<uchar>(row,col);
+             dst.at<uchar> (row,col)= saturate_cast<uchar>(gray * a + b) ;
+        }
+    }
+
+    imshow("DstWin",dst);
+
+    int rows1 = dst1.rows;
+    int cols1 = dst1.cols;
+
+    int row1 = 0;
+    int col1 = 0;
+
+    double a1 = 1.5;
+    double b1 = 20.0;
+
+    uchar b8 = 0;
+    uchar g8 = 0;
+    uchar r8 = 0;
+
+    for(row1 = 0;row1 <rows1;row1++)
+    {
+        for(col1 = 0;col1<cols1;col1++)
+        {
+            //获得像素内容
+            b8 = dst1.at<Vec3b>(row1,col1)[0];
+            g8 = dst1.at<Vec3b>(row1,col1)[1];
+            r8 = dst1.at<Vec3b>(row1,col1)[2];
+
+            dst1.at<Vec3b>(row1,col1)[0] = saturate_cast<uchar>(b8 * a1 +b1);
+            dst1.at<Vec3b>(row1,col1)[1] = saturate_cast<uchar>(g8 * a1 +b1);
+            dst1.at<Vec3b>(row1,col1)[2] = saturate_cast<uchar>(r8 * a1 +b1);
+        }
+    }
+
+    namedWindow("dst1",CV_WINDOW_AUTOSIZE);
+    imshow("dst1",dst1);
+
+   char c = waitKey(0);
+   if(c == 27)
+       return 0;
+}
+
+
+
+
+
+///////////////////////////// 2  调用系统接口模糊
+
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+
+int main(int argc, char *argv[])
+{
+    //创建src对象，保存图片
+    Mat src = imread("head3.jpg");
+    //创建一个对象保存转换后的图片
+    Mat dst = Mat::zeros(src.size(),src.type());
+
+    //验证读取图片是否成功
+    if(!src.data)
+        cout<<"src  error"<<endl;
+
+    //创建原图片窗口    //显示原图片
+    namedWindow("srcWin",CV_WINDOW_AUTOSIZE);
+    imshow("srcWin",src);
+
+    //调用系统接口进行模糊操作
+    blur( src,dst,Size(11,11),Point(-1,-1) );
+    //参数1：输入图片
+    //参数二：输出图片
+    //参数三：模糊程度
+    //参数四：中心点
+
+    //显示转换后的图片
+    namedWindow("dst",CV_WINDOW_AUTOSIZE);
+    imshow("dst",dst);
+
+    //一直等待  防止一闪而过
+   char c = waitKey(0);
+   if(c == 27)
+       return 0;
+}
+
+////////////////////////////////////////
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int main(int argc, char *argv[])
+{
+    // 创建多媒体对象  并给0  代表自己的摄像头
+    VideoCapture v(0);
+
+    //创建mat对象  保存视频
+    Mat src;
+
+    //定义按键 一会退出
+    char c =0;
+
+    //创建窗口
+    namedWindow("帅哥",CV_WINDOW_AUTOSIZE);
+    //创建级联
+    CascadeClassifier c1;
+    bool res = c1.load("haarcascade_frontalface_alt.xml");
+    if(!res)
+        cout<<"xml   error"<<endl;
+    Mat image;
+    int count = 0;
+    //读取视频
+    while (v.read(src)) {
+
+        Mat dst = Mat::zeros(src.size(),src.type());
+        //转为单通道图片
+        cvtColor(src,dst,CV_BGR2GRAY);
+
+        //直方图均衡化
+        Mat dst1 = Mat::zeros(dst.size(),dst.type());
+        //          原图片  转换后的图片  类比cvtcolor（）
+        equalizeHist(dst,dst1);
+
+        //识别人脸
+        //放人脸的容器
+        vector<Rect> faces;
+        //执行人脸识别检测的函数
+        c1.detectMultiScale(dst1,faces,1.1,3,0,Size(100,100) );
+        //参数一：处理的对象  必须实现 单通道
+        //参数二：检测到的人脸放到这个容器中
+        //参数三：每次找的扩大范围  每次放大10%
+        //参数四：每次检测三个像素点
+        //参数五：默认为0  CV_HAAR_DO_CANNY_PRUNING
+        //函数将会使用Canny边缘检测来排除边缘过多或过少的区域,
+        //参数六：限定检测范围
+
+        //获得人脸集合内容
+        for(int  i = 0;i<faces.size();i++)
+        {
+            //给原图画矩形进行操作
+            rectangle(src,faces[i],Scalar(0,0,255),2,LINE_8,0);
+            //参数一：读到的每一帧图片对象
+            //参数二：人脸的容器
+            //参数三：边缘的颜色
+            //参数四：表示粗细程度
+            //参数五：线条类型
+            //参数六：坐标点的小数点位数
+
+            //获得人脸图片
+            image = src(Rect( faces[i].x, faces[i].y,faces[i].width,faces[i].height)   );
+            //           //模糊
+            //           blur(image,image,Size(11,11),Point(-1,-1));
+
+            ////   保存多张图片要么格式化输出   imwrite（“复制后的名字”，复制的对象）
+            ///                                                             format("ff%i",i++)
+            ///                      要么多次调用函数
+            /// imwrite( format("ff%d.jpg",count),image );
+            ////           count++;
+            //           image.copyTo( src(Rect( faces[i].x, faces[i].y,faces[i].width,faces[i].height)   )  );
+            //
+            //        //锐化
+            //           //定义掩模核心
+            //           Mat kernel = (Mat_<char>(3,3)<<0,-1,0,-1,5,-1,0,-1,0 );
+            //           //系统函数锐化
+            //           filter2D( image,image,image.depth(),kernel  );
+            //       //反差
+            //           bitwise_not(image,image);
+
+//            //亮度
+//            int rows1 = image.rows;
+//            int cols1 = image.cols;
+
+//            int row1 = 0;
+//            int col1 = 0;
+
+//            double a1 = 1.5;
+//            double b1 = 20.0;
+
+//            uchar b8 = 0;
+//            uchar g8 = 0;
+//            uchar r8 = 0;
+
+//            for(row1 = 0;row1 <rows1;row1++)
+//            {
+//                for(col1 = 0;col1<cols1;col1++)
+//                {
+//                    //获得像素内容
+//                    b8 = image.at<Vec3b>(row1,col1)[0];
+//                    g8 = image.at<Vec3b>(row1,col1)[1];
+//                    r8 = image.at<Vec3b>(row1,col1)[2];
+
+//                    image.at<Vec3b>(row1,col1)[0] = saturate_cast<uchar>(b8 * a1 +b1);
+//                    image.at<Vec3b>(row1,col1)[1] = saturate_cast<uchar>(g8 * a1 +b1);
+//                    image.at<Vec3b>(row1,col1)[2] = saturate_cast<uchar>(r8 * a1 +b1);
+//                }
+//            }
+
+            cout<<faces.size()<<endl;
+
+            //窗口显示
+            imshow("帅哥",src);
+        }
+
+        //30毫秒等待
+        c = waitKey(30);
+        //按键检测
+        if(c == 27)
+            break;
+    }
+
+    return 0;
+}
+
+//////////////////////////////////////进度条改变  亮度 模糊程度跟着变
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int pro = 3;
+int max1 = 21;
+Mat src;
+
+//对图片进行模糊操作
+void fun1(int,void*)
+{
+
+    Mat dst = Mat::zeros(src.size(),src.type());
+    //对副本进行操作，可以回到最初的模样
+    src.copyTo(dst);
+    //模糊图片
+    blur(src,dst,Size(pro+1,pro+1),Point(-1,-1));
+
+    //展示图片
+    imshow("src",dst);
+    waitKey(0);
+    cout<<"pro"<<pro<<endl;
+}
+
+//对图片进行亮度调整
+void fun2(int,void*)
+{
+      Mat dst = Mat::zeros(src.size(),src.type());
+      //对副本进行操作
+       src.copyTo(dst);
+
+
+        //改变三通道图片亮度
+        int rows1 = dst.rows;
+        int cols1 = dst.cols;
+
+        int row1 = 0;
+        int col1 = 0;
+
+        double a1 = 1.5;
+        //double b1 = 20.0;
+
+        uchar b8 = 0;
+        uchar g8 = 0;
+        uchar r8 = 0;
+
+        for(row1 = 0;row1 <rows1;row1++)
+        {
+            for(col1 = 0;col1<cols1;col1++)
+            {
+                //获得像素内容
+                b8 = dst.at<Vec3b>(row1,col1)[0];
+                g8 = dst.at<Vec3b>(row1,col1)[1];
+                r8 = dst.at<Vec3b>(row1,col1)[2];
+
+                dst.at<Vec3b>(row1,col1)[0] = saturate_cast<uchar>(a1 * b8 +pro);
+                dst.at<Vec3b>(row1,col1)[1] = saturate_cast<uchar>(a1 * g8 +pro);
+                dst.at<Vec3b>(row1,col1)[2] = saturate_cast<uchar>(a1 * r8 +pro);
+            }
+        }
+
+        //覆盖原图 并显示
+        imshow("src",dst);
+        waitKey(0);
+        cout<<"pro"<<pro<<endl;
+
+}
+
+int main(int argc, char *argv[])
+{
+    src = imread("head9.jpg");
+
+    if(!src.data)
+    {
+        cout<<"src error"<<endl;
+        return -1;
+    }
+
+    namedWindow("src",CV_WINDOW_AUTOSIZE);
+    imshow("src",src);
+
+    
+    createTrackbar("bar","src",&pro,max1,fun2);
+    waitKey(0);
+
+    return 0;
+}
+
+

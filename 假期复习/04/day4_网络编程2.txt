@@ -1,0 +1,260 @@
+第四天 (2学时)
+1 复习
+	tcp / ip
+	四层(应用层、传输层、网络层、网络接口层)
+	应用层(http ftp dns dhcp ....)
+	传输层(udp tcp icmp)
+	网络层(ip)
+	网络接口层( 以太网   wifi(802.11) )
+2 昨天问题
+	dhcp服务器有两个, 会出现什么情况
+	可以工作，不会影响整个网络(条件)，但是有一个工作不了
+
+重要socket函数讲解
+1 什么是socket
+	linux下网络通信又称为 socket编程， socket通信
+
+	socket提供了一系列的编程接口(函数)，又称为 socket api
+	从应用的角度来说，通过这些接口函数可以进行网络通信
+	从底层的角度来说，socket 封装了一些函数，实现了tcp/ip协议
+
+2 为什么有socket编程模型  (linux 有一个统一I/O模式   open read write close)
+	因为 I/O 模型并不能完整的表述出 网络通信过程
+
+3 socket函数(类似于open函数，创建一个socket)
+	man 2 socket
+  int socket(int domain, int type, int protocol);
+  作用：创建一个socket
+  参数：domain (代表网络的类型  AF_INET (ipv4))
+        type   (协议的类型, udp / tcp)
+		重点:
+		udp (SOCK_DGRAM   数据报套接字)
+		tcp (SOCK_STREAM  流式套接字)
+        protocol(通常是0)
+  返回值:  一个描述符(fd)
+	> 表示创建成功
+	< 0 创建失败
+  udp通信socket实例
+#include <sys/types.h>          /* See NOTES */
+#include <sys/socket.h>
+#include <stdio.h>
+int main()
+{
+	int fd = socket(AF_INET, SOCK_DGRAM, 0);	//udp
+	if(fd > 0)
+	{
+		printf("fd is %d\n", fd);
+	}
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	if(fd > 0)
+	{
+		printf("fd is %d\n", fd);
+	}	
+}
+
+>  输出重定向
+stdin(标准输入   0)
+stdout(标准输出  1)
+stderr(错误输出  2)
+
+linux 系统启动之后(自动创建 stdin stdout stderr， 占用0,1,2)
+
+4 inet_addr
+in_addr_t inet_addr(const char *cp);
+  作用：将点分制的ip地址转换成 整形ip地址
+  点分制ip地址("192.168.1.252"),  占用内存空间是多少?    14byte
+  为了减少存储空间(用一个4字节整数存ip地址 C0 A8 1 FC)
+  例子：
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+int main()
+{
+	int x = inet_addr("192.168.1.252");  //将点分制ip地址转换成网络字节序的ip地址
+	printf("x is %u\n", x);
+	printf("x is %x\n", x);		//FC01A8C0(正好和ip地址相反) 字节序
+}
+
+5 字节序:   
+	大端序  (高位数据存在低地址)
+	小端序  (高位数据存在高地址)
+
+练习： 测试计算机内存是大端序 还是 小端序
+#include <stdio.h>
+int main()
+{
+	int x = 0x12345678;
+	char *p = &x;
+	printf("%x %p\n", *p, p);	//%p 输出地址
+	p++;
+	printf("%x %p\n", *p, p);
+	p++;
+	printf("%x %p\n", *p, p);
+	p++;
+	printf("%x %p\n", *p, p);
+}
+linux@ubuntu:~$ ./a.out
+78 0xbfeac348
+56 0xbfeac349
+34 0xbfeac34a
+12 0xbfeac34b
+结论：PC 小端序
+
+6 如何解决网络字节序和计算机字节序不一致问题(网络字节序正好和主机字节序相反)
+htonl (host to network long)         
+htons (host to network short)
+
+ntohl (network to host long)
+ntohs (network to host short)
+
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+int main()
+{
+	int x = inet_addr("192.168.1.252");  //将点分制ip地址转换成网络字节序的ip地址
+	printf("x is %x\n", x);		//FC01A8C0(正好和ip地址相反) 字节序
+	x = htonl(x);			//ntohl 
+	printf("x is %x\n", x);		//C0A801FC
+}
+
+inet_ntoa (作用:  将网络字节序的ip地址转换成点分制ip地址)
+#include <stdio.h>
+#include <sys/socket.h>
+int main()
+{
+	int a = 0xC0A81EFC;
+	printf("%s\n", inet_ntoa(htonl(a)));
+}
+
+作业:  用共用体验证 计算机是大端序还是小端序
+
+//////////////////////////////////////////////////////////////////////////////
+6 udp 与 tcp 区别
+	tcp (安全 可靠的传输协议)
+		1 (连接  确认对方在不在线， 如果在线，再发数据)
+		2 发送过程中有重传机制(ACK)
+	udp (不可靠的传输协议)
+		1 udp (不需要连接   不管对方是否在线，都发数据)
+                2 没有重传机制
+
+	udp的优点(传输效率高  速度快)
+	udp(数据量大   视频   大文件)  局域网多数用udp传输(dns  dhcp)
+	tcp(安全性高)        互联网上的数据tcp  (http  ftp)
+
+7 udp通信流程
+	分为 发送端  和 接收端
+
+8 udp通信接收端的实现
+1) 创建socket
+	socket(AF_INET, SOCK_DGRAM, 0);
+2) 绑定自己的ip地址和端口号(将进程与IP地址和端口号关联)
+       int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+	sockfd---> socket 返回值
+	addr-----> 保存了ip地址和端口号(用了一个结构体struct sockaddr)
+	addrlen--> 第二个参数长度
+ip地址： 能识别唯一一台计算机
+端口号:  通过端口号能识别  哪个应用程序(一个应用程序占用1个端口号)， 软件上的概念
+	范围 : 1 - 65535
+		1---1023   是通用端口号，我们的应用程序不要用 
+	        21        ftp服务
+		80        http
+		51  53    dns
+		67 68     dhcp
+	用户应用程序尽量使用5位端口号
+//此结构体赋值很麻烦
+struct sockaddr
+{
+	short sa_family;     //AF_INET (tcp/ip  v4通信)
+	char sa_data[14];    //字符数组有14个字节  1-2字节 端口号
+                                                   3-6     ip地址
+						   7-14    预留
+	//端口号(用来识别是哪个服务的，取值范围1-65535)
+};
+端口号 short
+ip地址 long
+因为  sa_data 存储起来不方便，所以，linux又定义了下面这个结构体
+struct sockaddr_in
+{
+	short sin_family;
+	short sin_port;
+	struct in_addr sin_addr;    //struct in_addr   4  
+	unsigned char sin_zero[8];	//预留
+};
+因为struct scokaddr 赋值麻烦，所以又定义了一个 struct sockaddr_in ，专门用来赋值的，网络通信时，强制
+将struct sockaddr_in转换成struct sockaddr
+例子：
+struct sockaddr_in myaddr;
+myaddr.sin_family = AF_INET;
+myaddr.sin_port = htons(33333);
+myaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 	//192.168.30.252
+			//htonl(INADDR_ANY);  INADDR_ANY: 可以自动获取我们的ip地址  
+bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr));
+
+3) 接收数据(阻塞的方式接收数据)
+ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
+                        struct sockaddr *src_addr, socklen_t *addrlen);
+参数:  sockfd  socket返回值
+	buf    接收到的数据存放的位置
+	len    将要接收的数据的长度
+	flags  0
+	src_addr：保存发送方的ip地址和端口号
+	addrlen ：保存发送方的结构体大小
+返回值: 
+	实际收到的数据的大小
+	<= 0表示出错，errno里面保存错误原因
+4) 关闭socket
+close(fd);
+
+接收端实例
+///recv.c
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+int main()
+{
+	char buf[100] = { 0 };
+	struct sockaddr_in youaddr;
+	int len;
+	int fd = socket(AF_INET, SOCK_DGRAM, 0);
+	struct sockaddr_in myaddr;
+	myaddr.sin_family = AF_INET;
+	myaddr.sin_port = htons(33333);
+	myaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 	//192.168.30.252
+	bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr));	
+	recvfrom(fd, buf, sizeof(buf), 0, (struct sockaddr *)&youaddr, &len);
+	printf("recv is %s\n", buf);
+	printf("ip %s, port %d\n", inet_ntoa(htonl(youaddr.sin_addr.saddr)), htons(youaddr.sin_port));
+}
+
+上午作业讲解
+作业:  用共用体验证 计算机是大端序还是小端序
+#include <stdio.h>
+typedef union	//共用体是  多个变量共用一块空间
+{
+	short x;
+	char c[2];
+}test_t;		//test_t  2字节   //如果考虑内存对齐(test_t 4字节) 有待测试
+#include <stdio.h>
+int main()
+{
+	test_t a;
+	a.x = 0x1234;		//c 同时被赋值(因为x和c共用内存)
+	if(a.c[1] == 0x12)
+	{
+		printf("little endian\n");
+	}	
+	else
+	{
+		printf("big endian\n");
+	}
+}
+
+下午作业:
+1 用一个宏实现htonl函数
+2 实现udp循环接收并打印程序，要求被绑定的 ip地址及端口号在程序参数中传递
+ (提示： int main(int argc, char *argv[])    )

@@ -1,0 +1,244 @@
+
+//////////////////////////////////////////////单通道图片提高亮度
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int main(int argc, char *argv[])
+{
+    //创建Mat对象
+    Mat src = imread("lover.jpg");
+    //将三通道 改为 一通道
+    cvtColor(src,src,CV_BGR2GRAY);
+    Mat dst (src);
+    //判断
+    if(!src.data)
+    {
+        cout<<"src error"<<endl;
+        return -1;
+    }
+    //创建窗口
+    namedWindow("srcWin",CV_WINDOW_AUTOSIZE);
+    //显示图片
+    imshow("srcWin",src);
+
+    // 定义初始值  用于保存得到的像素值
+    int gray = 0;
+    //由于亮度没有接口  所以只能直接对像素点进行操作
+    //亮度的操作就是调用公式 对像素点进行操作
+    //需要一个double类型的  系数k  和 常量b(a>0)
+   double k = 1.5;
+   double b = 20.0;
+
+    //得到像素点  并且改变
+    for(int row = 0 ; row<dst.rows;row++)
+    {
+        for(int col =0; col<dst.cols;col++)
+        {
+            gray =dst.at<uchar>(row,col);
+            dst.at<uchar>(row,col) = saturate_cast<uchar>(gray*k +b);
+        }
+    }
+
+    //创建窗口
+    namedWindow("dstWin",CV_WINDOW_AUTOSIZE);
+    //显示图片
+    imshow("dstWin",dst);
+    //一直等待
+    waitKey(0);
+    return 0;
+}
+
+//////////////////////////////////////////////三通道图片提高亮度
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int main(int argc, char *argv[])
+{
+    //创建Mat对象
+    Mat src = imread("lover.jpg");
+    Mat dst (src);
+    //判断
+    if(!src.data)
+    {
+        cout<<"src error"<<endl;
+        return -1;
+    }
+    //创建窗口
+    namedWindow("srcWin",CV_WINDOW_AUTOSIZE);
+    //显示图片
+    imshow("srcWin",src);
+
+    // 定义初始值  用于保存得到的像素值
+    int gray = 0;
+    //由于亮度没有接口  所以只能直接对像素点进行操作
+    //亮度的操作就是调用公式 对像素点进行操作
+    //需要一个double类型的  系数k  和 常量b(a>0)
+   double k = 1.5;
+   double c = 20.0;
+
+   int b = 0;
+   int g = 0;
+   int  r = 0;
+
+    //得到像素点  并且改变
+    for(int row = 0 ; row<dst.rows;row++)
+    {
+        for(int col =0; col<dst.cols;col++)
+        {
+            //[]表示第几个
+            b = dst.at<Vec3b>(row,col)[0];
+            g = dst.at<Vec3b>(row,col)[1];
+            r = dst.at<Vec3b>(row,col)[2];
+                                                 //单独对每个进行的操作  所以是uchar
+            dst.at<Vec3b>(row,col)[0] = saturate_cast<uchar>(b * k + c);
+            dst.at<Vec3b>(row,col)[1] = saturate_cast<uchar>(g * k + c);
+            dst.at<Vec3b>(row,col)[2] = saturate_cast<uchar>(r * k + c);
+
+
+        }
+    }
+
+    //创建窗口
+    namedWindow("dstWin",CV_WINDOW_AUTOSIZE);
+    //显示图片
+    imshow("dstWin",dst);
+    //一直等待
+    waitKey(0);
+    return 0;
+}
+//////////////////////////////////////////////三通道图片均值模糊
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int main(int argc, char *argv[])
+{
+    //创建Mat对象
+    Mat src = imread("lover.jpg");
+    Mat dst (src);
+    //判断
+    if(!src.data)
+    {
+        cout<<"src error"<<endl;
+        return -1;
+    }
+    //创建窗口
+    namedWindow("srcWin",CV_WINDOW_AUTOSIZE);
+    //显示图片
+    imshow("srcWin",src);
+
+    //对图片进行均值模糊
+    //中心像素点的坐标为-1，-1
+    blur(dst,dst,Size(11,11),Point(-1,-1));
+    //创建窗口
+    namedWindow("dstWin",CV_WINDOW_AUTOSIZE);
+    //显示图片
+    imshow("dstWin",dst);
+    //一直等待
+    waitKey(0);
+    return 0;
+}
+
+/////////////////////////////////////进度条
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+
+int pro =2;
+int max1 = 30;
+Mat src;
+
+//在我看来，可以用进度条改变亮度，模糊程度
+//本质就在于将进度条的值变化作为二者的参数形成同步变动
+
+void fun1(int , void *)
+{
+    Mat dst = Mat::zeros(src.size(),src.type());
+ //   src.copyTo(dst);
+    blur(src,dst,Size(pro+1,pro+1),Point(-1,-1));
+     imshow("window",dst);
+
+
+    cout<<"pro:  "<<pro<<endl;
+}
+
+void fun2(int,void*)
+{
+    Mat dst = Mat::zeros(src.size(),src.type());
+ //   src.copyTo(dst);
+
+     //亮度
+    double k = 1.5;
+    double c = 30;
+
+    uchar b = 0;
+    uchar g = 0;
+    uchar r = 0;
+
+    for(int row = 0;row<dst.rows;row++)
+    {
+        for(int col = 0;col<dst.cols;col++)
+        {
+            b = src.at<Vec3b>(row,col)[0];
+            g = src.at<Vec3b>(row,col)[1];
+            r = src.at<Vec3b>(row,col)[2];
+
+            dst.at<Vec3b>(row,col)[0] = saturate_cast<uchar>((pro+1) * b + pro);
+            dst.at<Vec3b>(row,col)[1] = saturate_cast<uchar>((pro+1)  * g + pro);
+            dst.at<Vec3b>(row,col)[2] = saturate_cast<uchar>((pro+1)  * r + pro);
+        }
+    }
+
+     imshow("window",dst);
+
+}
+
+int main(int argc, char *argv[])
+{
+    src = imread("lover.jpg");
+
+    if(!src.data)
+    {
+        cout<<"src error"<<endl;
+        return -1;
+    }
+
+    namedWindow("window",CV_WINDOW_AUTOSIZE);
+
+    imshow("window",src);
+
+    createTrackbar("bar","window",&pro,max1,fun2);
+    //参数一：进度条名字
+    //参数二：窗体名字
+    //参数三：进度条初值首地址
+    //参数四：进度条最大值
+    //参数五：回调函数
+    waitKey(0);
+
+    return 0;
+}
+
+

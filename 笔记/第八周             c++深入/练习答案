@@ -1,0 +1,3920 @@
+
+day1
+******************************
+练习：输入一个字符 如果是大写 则转为小写 如果是小写则转为大写
+
+#include <iostream>
+
+int main()
+{
+	char c;
+	cout<<"please input a char:"<<endl;
+	std::cin>>c;
+	if(c>='a'&&c<='z')
+	{
+		c -= 32;
+	}
+	else if(c>='A'&&c<='Z')
+	{
+		c += 32;
+	}
+	std::cout<<c<<std::endl;
+}
+注意：
+std::cout<<c+32<<std::endl;  会输出int类型  如果想用 就给强转成char类型
+std::cout<<char（c+32）<<std::endl;
+
+练习：分别在teacher和worker命名空间中添加函数来输出name
+
+#include <iostream>
+
+using namespace std;
+
+namespace teacher
+{
+	char name[] = "dashen";
+
+	void showName()
+	{
+		cout<<name<<endl;//默认使用当前命名空间
+	}
+}
+
+namespace worker
+{
+	char name[] = "daye";
+	void showName()
+	{
+		cout<<name<<endl;
+	}
+}
+
+using namespace teacher;
+using namespace worker;
+
+int main()
+{
+	teacher::showName();
+	worker::showName();
+}
+
+
+2.自己写命名空间
+示例1：
+#include <iostream>
+
+using namespace std;
+
+namespace teacher
+{
+	char name[] = "dashen";
+}
+
+using namespace teacher;
+//using teacher::name;
+
+int main()
+{
+	cout<<"老师是"<<name<<endl;
+}
+示例2：
+#include <iostream>
+
+using namespace std;
+
+namespace teacher
+{
+	char name[] = "dashen";
+}
+
+namespace worker
+{
+	char name[] = "daye";
+	int age = 68;
+}
+
+using namespace teacher;
+using namespace worker;
+
+int main()
+{
+	cout<<"老师是"<<name<<endl;//编译错误
+	cout<<teacher::name<<" and "<<worker::name<<endl;//正确用法 
+	////有歧义时 需要加作用域限定符 名字冲突的情况下仍然要在使用前添加命名空间
+}
+
+练习：分别在teacher和worker命名空间中添加函数来输出name
+
+#include <iostream>
+
+using namespace std;
+
+namespace teacher
+{
+	char name[] = "dashen";
+
+	void showName()
+	{
+		cout<<name<<endl;//默认使用当前命名空间
+	}
+}
+
+namespace worker
+{
+	char name[] = "daye";
+	void showName()
+	{
+		cout<<name<<endl;
+	}
+}
+
+using namespace teacher;
+using namespace worker;
+
+int main()
+{
+	teacher::showName();
+	worker::showName();
+}
+
+示例3：
+#include <iostream>
+
+using namespace std;
+
+namespace teacher
+{
+	char name[] = "dashen";
+	int age = 19;
+}
+
+namespace worker
+{
+	char name[] = "daye";
+	int weight = 180;
+}
+
+using namespace teacher;
+using namespace worker;
+
+char name[] = "dashu";
+
+int main()
+{
+	cout<<teacher::name<<"age = "<<age<<endl;
+	cout<<worker::name<<"weight = "<<weight<<endl;
+	cout<<::name<<endl;//C++会将没有命名空间的冲突声明放入匿名命名空间  
+	
+	//匿名域  匿名命名空间    当命名空间有冲突时，才加::
+	
+	//自己开发的时候 给自己的模块加上域  以防和别人冲突
+	
+	
+}
+
+
+
+
+练习：随机点名
+
+#include <iostream>
+#include <string>
+#include <cstdlib>
+
+using namespace std;
+
+int main()
+{
+	srand(time(0));
+	string names[] = {
+		"曹晨曦",
+		"韩紫薇",
+		"史晓蕾",
+		"张成旺",
+		"卜庆超",
+		"白祥",
+		"李鑫宇",
+		"胡亚男",
+		"韩瑜",
+		"刘洋",
+		"王栋",
+		"庄展博",
+		"焦世奇",
+		"贾红迪",
+		"沈万龙",
+		"宋绩浩",
+		"关紫璇",
+		"白秀",
+		"胡佳朋",
+		"陈永康",
+		"卢伟浩",
+		"李浩然",
+		"翁兴涛",
+		"马宝峰",
+		"李培",
+		"陈翔翱"
+	};
+	int index = rand()%26;
+	cout<<names[index]<<endl;
+}
+
+练习：输入一个字符串，将其中的大写字母转换为小写字母
+
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+
+int main()
+{
+	string s;
+	getline(cin, s);
+	cout<<s<<endl;
+	
+	for(int i = 0;i < s.size();i++)
+	{
+		if(s[i]>='A' && s[i]<='Z')
+		{
+			s[i]+=32;
+		}
+	}
+	
+	cout<<s<<endl;
+}
+
+//练习：键盘输入学生人数studentNum 需要将每个学生信息(姓名 学号)输入计算机保存 
+然后输入某一学生姓名查找其相关数据 
+如果输入姓名后  找到 则输出学生信息 没找到 则输出“查无此人”
+
+#include <iostream>
+#include <string>
+#include <cstdio>
+
+using namespace std;
+
+struct student
+{
+	string name;
+	string num;
+};
+
+void inputStudentInfo(student* s, int studentNum);
+int searchStudent(student* s,int studentNUm, string searchName);
+
+int main()
+{
+	student students[100];
+	int studentNum;
+	cin>>studentNum;
+	getchar();//清理\n
+
+	inputStudentInfo(students, studentNum);
+
+	string searchName;
+	cout<<"请输入查找的名字"<<endl;
+	getline(cin, searchName);
+	int result = searchStudent(students, studentNum, searchName);
+	if(result == -1)
+	{
+		cout<<"查无此人"<<endl;
+	}
+	else
+	{
+		cout<<students[result].name<<" "<<students[result].num<<endl;
+	}
+}
+
+void inputStudentInfo(student* s, int studentNum)
+{
+	for(int i = 0;i < studentNum;i++)
+	{
+		cout<<"请输入名字"<<endl;
+		getline(cin, s[i].name);
+		cout<<"请输入学号"<<endl;
+		getline(cin, s[i].num);
+	}
+}
+
+int searchStudent(student* s,int studentNum, string searchName)
+{
+	for(int i = 0;i < studentNum;i++)
+	{
+		if(s[i].name == searchName)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+//练习：编写函数swap实现main中两个整数交换 要求：形参用引用
+
+#include <iostream>
+
+using namespace std;
+
+void swap(int& a, int& b);
+
+int main()
+{
+	int a = 10, b = 20;
+	swap(a, b);
+	cout<<a<<" "<<b<<endl;
+}
+void swap(int &a,int &b)
+{
+	int tmp;
+	tmp = a;
+	a = b;
+	b = tmp;
+}
+
+************************************************************************
+day2
+********************************************************************
+从键盘输入学生分数 统计出最高分 最低分 平均分 要求：空间动态开辟
+#include<iostream>
+#include<cstdlib>
+using namespace std;
+#define N 3
+int main()                                              
+{
+	int *p=new int[N];
+	if(NULL==p)
+	{
+		cout<<"malloc error"<<endl;
+		exit(-1);
+	}
+
+	cout<<"please input score:"<<endl;
+	for(int i=0;i<N;i++)
+	{
+		cin>>p[i];
+	}
+
+	int max=p[0],min=p[0],sum=p[0];
+	for(int i=1;i<N;i++)
+	{
+		if(max<p[i])
+		{
+			max = p[i];
+		}
+		else if(min>p[i])
+		{
+			min = p[i];
+		}
+		sum+=p[i];
+	}
+
+	cout<<"max:"<<max<<" min:"<<min<<" avg:"<<sum/N<<endl;
+
+}
+//练习1：重载dev函数，进行int类型和float类型的两个数相除
+
+#include <iostream>
+
+using namespace std;
+
+int dev(int num1, int num2)
+{
+	return num1/num2;
+}
+
+float dev(float num1, float num2)
+{
+	return num1/num2;
+}
+
+int main()
+{
+	cout<<dev(10, 3)<<endl;
+	cout<<dev(10.0f, 3.0f)<<endl;
+}
+
+//练习：找出两个数最大值(两个数可能是int 也可能是float)
+#include<iostream>
+using namespace std;
+
+int max(int m,int n)
+{
+	return m>n?m:n;	
+}
+float max(float m,float n)
+{
+	return m>n?m:n;	
+}
+int main()
+{
+	int a=9,b=7;
+	float x=1.23,y=6.778;
+	cout<<max(a,b)<<endl;
+	cout<<max(x,y)<<endl;
+}
+
+//练习：判断一个年份是否是闰年，声明中给默认年份2016
+
+#include<iostream>
+using namespace std;
+
+void func(int year=2016);//函数声明时 指定了默认值2016 则函数调用时 可以不指定实参
+int main()
+{
+	func();
+}
+
+void func(int year)
+{
+	if(year%4==0&&year%100!=0||year%400==0)
+	{
+		cout<<"leap year!"<<endl;
+	}
+	else 
+	{
+		cout<<"common year!"<<endl;
+	}
+}
+
+//练习： 定义一个类，定义二维数组成员，重载函数print，分别实现常规打印数组元素和以一定格式打印数组
+			init();
+0 1 2 3     print();
+1 2 3 4
+2 3 4 5
+
+0#1#2#3     print(char space);
+1#2#3#4
+2#3#4#5
+
+#include <iostream>
+
+using namespace std;
+
+class Overload
+{
+public:
+	int arr[3][4];
+	void init()
+	{
+		for(int i = 0;i < 3;i++)
+		{
+			for(int j = 0;j < 4;j++)
+			{
+				arr[i][j] = i+j;
+			}
+		}
+	}
+
+	void print()
+	{
+		print(' ');
+	}
+
+	void print(char space)
+	{
+		for(int i = 0;i < 3;i++)
+		{
+			for(int j = 0;j < 4;j++)
+			{
+				if(j < 3)
+				{
+					cout<<arr[i][j]<<space;
+				}
+				else
+				{
+					cout<<arr[i][j]<<endl;
+				}
+			}
+		}	
+	}
+};
+
+int main()
+{
+	Overload ol;
+	ol.init();
+	ol.print();
+	cout<<"-------------"<<endl;
+	ol.print('*');
+	return 0;
+}
+
+//练习：定义Dog类，有成员变量name，有成员函数setName起名，sleep睡觉，eat吃饭
+	1.setName给属性name赋值
+	2.sleep输出xxx睡觉了
+	3.eat输出xxx妈妈喊你回家吃饭了
+
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+class Dog
+{
+public:
+	string name;
+
+	void setName(string n)
+	{
+		name = n;
+	}
+
+	void sleep()
+	{
+		cout<<name<<"睡觉了"<<endl;
+	}
+
+	void eat()
+	{
+		cout<<name<<"妈妈喊你回家吃饭了"<<endl;
+	}
+};
+
+int main()
+{
+	Dog* d = new Dog;
+	d->setName("小明");
+	d->sleep();
+	d->eat();
+
+	delete d;
+}
+
+练习：自定义一个类实现栈结构，有出栈（pop）和入栈（push）功能，可以存放任意多整数
+1.成员变量指针指向数组
+2.成员变量表示数组长度
+3.成员函数pop()和push()
+4.成员变量表示栈针
+5.成员init给成员变量赋初始值
+
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+class MyStack
+{
+public:
+	int* stack;
+	int length;
+	int top;
+
+	void init()
+	{
+		top = 0;
+		length = 10;
+		stack = new int[length];
+	}
+
+	int pop()
+	{
+		top--;
+		return stack[top];
+	}
+
+	void push(int data)
+	{
+		if(top == length)//当前数组已满
+		{
+			expand();
+		}
+		stack[top++] = data;
+	}
+
+	void expand()//扩大数组
+	{
+		int newlength = length*2;
+		int* newstack = new int[newlength];
+		for(int i = 0;i < length;i++)
+		{
+			newstack[i] = stack[i];
+		}
+		delete[] stack;
+		stack = newstack;
+		length = newlength;
+	}
+};
+
+
+int main()
+{
+	MyStack* p = new MyStack;
+	p->init();
+	for(int i = 0;i < 100;i++)
+	{
+		p->push(i);
+	}
+
+	for(int i = 0;i < 100;i++)
+	{
+		cout<<p->pop()<<endl;
+	}
+}
+
+
+练习：定义链表类class Link
+1.链表节点结构体
+struct Node
+{
+		int num;
+		Node* pNext;     
+};
+2.成员指针指向链表头pHead和链表尾pTrail
+3.成员变量表示链表长度size
+4.成员函数add向链表尾部插入数据
+5.成员函数get获得指定位置的数据
+
+#include<iostream>
+#include<string>
+using namespace std;
+
+class Link
+{
+public:
+	struct Node
+	{
+		int num;
+		Node* pNext;
+	};
+	int size;
+	Node* pHead;
+	Node* pTail;
+	
+	void init()
+	{
+		size=0;
+		pHead = new Node;
+		pTail = pHead;
+	}
+	void add(int data)
+	{
+		Node* pNode = new Node;
+		pNode->num =data;
+		pTail->pNext = pNode;
+		pTail = pNode;
+		size++;
+
+	}
+	int getNode(int index)
+	{
+		Node* pNode = pHead->pNext;
+		for(int i = 0 ; i <index;i++)
+		{
+			pNode = pNode->pNext;
+		}
+		return pNode->num;
+	}
+	int getSize()
+	{
+		return size;
+	}
+};
+
+
+int main()
+{
+	Link l;
+	l.init();
+	for(int i = 0 ; i < 10; i++)
+	{
+		l.add(i);
+	}
+	for(int i = 0 ; i < l.getSize();i++)
+		cout<<l.getNode(i);
+	cout<<endl;
+	cout<<l.getNode(5)<<endl;
+}
+
+************************************************************************
+day3
+********************************************************************
+//练习：定义类 向数组中输入整数 并求出数组元素中的最大值，最小值和平均值
+1.数组成员变量private修饰
+2.成员函数input输入数组的值和数组长度  动态创建（根据当前的逻辑创建）
+3.成员函数max
+4.成员函数min
+5.成员函数agv
+
+#include <iostream>
+
+using namespace std;
+
+class Array
+{
+private:
+	int* arr;
+	int length;
+public:
+	void input()
+	{
+		cout<<"输入数组长度"<<endl;
+		cin>>length;
+		arr = new int[length];
+		for(int i = 0;i < length;i++)
+		{
+			cout<<"输入数字"<<endl;
+			cin>>arr[i];
+		}
+	}
+
+	int max()
+	{
+		int m = arr[0];
+		for(int i = 1;i < length;i++)
+		{
+			if(arr[i] > m)
+			{
+				m = arr[i];
+			}
+		}
+		return m;
+	}
+
+	int min()
+	{
+		int m = arr[0];
+		for(int i = 1;i < length;i++)
+		{
+			if(arr[i] < m)
+			{
+				m = arr[i];
+			}
+		}
+		return m;
+	}
+
+	int agv()
+	{
+		int sum = 0;
+		for(int i = 0;i < length;i++)
+		{
+			sum += arr[i];
+		}
+		return sum/length;
+	}
+};
+
+int main()
+{
+	Array a;
+	a.input();
+	cout<<a.max()<<endl;
+	cout<<a.min()<<endl;
+	cout<<a.agv()<<endl;
+	return 0;
+}
+
+
+//练习：定义一个类，数据成员：length,width,heigh （分文件）
+成员函数如下功能：
+1.由键盘输入长方体的长宽高input
+2.计算长方体体积volume
+3.输出长方体体积show
+
+头文件
+#ifndef CUBE_H
+#define CUBE_H
+
+class Cube
+{
+public:
+	void input();
+	int volume();
+	void show();
+private:
+	int length;
+	int width;
+	int height;
+};
+
+#endif
+
+源文件
+#include "cube.h"
+#include <iostream>
+
+using namespace std;
+
+void Cube::input()
+{
+	cout<<"输入 长宽高"<<endl;
+	cin>>length>>width>>height;
+}
+
+int Cube::volume()
+{
+	return length*width*height;
+}
+
+void Cube::show()
+{
+	int v = volume();
+	cout<<"v:"<<v<<endl;
+}
+
+main
+#include <iostream>
+#include "cube.h"
+
+using namespace std;
+
+int main()
+{
+	Cube c;
+	c.input();
+	c.show();
+	return 0;
+}
+
+//练习：计算长方形周长 构造函数实现长宽赋值（构造函数带参数）
+ #include <iostream>
+
+using namespace std;
+
+class Cube
+{
+private:
+	int length;
+	int width;
+public:
+	Cube(int l, int w)
+	{
+		length = l;
+		width = w;
+	}
+
+	int cir()
+	{
+		return (length+width)*2;
+	}
+};
+
+int main()
+{
+	Cube c(10, 20);
+	cout<<c.cir()<<endl;
+	return 0;
+}
+
+练习：实现一个分数类F  功能：F f1(3,4) 显示结果:3/4 
+1.构造函数传入参数
+2.成员函数show显示
+
+头文件
+#ifndef F_H
+#define F_H
+
+class F
+{
+public:
+	F(int s, int m);
+	void show();
+private:
+	int son;
+	int mother;
+};
+
+#endif
+
+源文件
+
+#include "f.h"
+#include <iostream>
+
+using namespace std;
+
+F::F(int s, int m):son(s),mother(m)
+{
+
+}
+
+void F::show()
+{
+	cout<<son<<"/"<<mother<<endl;
+}
+
+main
+#include <iostream>
+#include "f.h"
+
+using namespace std;
+
+
+int main()
+{
+	F f(3, 4);
+	f.show();
+	return 0;
+}
+
+//练习2：键盘输入时间 显示输入时间的下一秒 Timer
+1.定义成员变量 h m s
+2.成员函数go 改变h m s 的值
+3.成员函数show显示下一秒的时间
+
+头文件
+#ifndef TIMER_H
+#define TIMER_H
+
+class Timer
+{
+public:
+	Timer(int h, int m, int s);
+	void go();
+	void show();
+private:
+	int hour;
+	int min;
+	int sec;
+};
+
+#endif
+源文件
+#include "timer.h"
+#include <iostream>
+
+using namespace std;
+
+Timer::Timer(int h, int m, int s):
+	hour(h),
+	min(m),
+	sec(s)
+{
+}
+
+void Timer::go()
+{
+	sec++;
+	min += sec/60;
+	hour += min/60;
+
+	sec %= 60;
+	min %= 60;
+	hour %= 24;
+}
+
+void Timer::show()
+{
+	cout<<hour<<":"<<min<<":"<<sec<<endl;
+}
+
+main
+#include <iostream>
+#include "timer.h"
+
+using namespace std;
+
+
+int main()
+{
+	int h, m, s;
+	cin>>h>>m>>s;
+	Timer t(h, m, s);
+
+	while(true)
+	{
+		t.go();
+		t.show();
+		sleep(1);
+	}
+	return 0;
+}
+
+//练习：Person类，包含私有属性：姓名name，性别bool gender，年龄age，另一个对象的指针 Person *lover;
+		1.构造函数初始化成员变量
+		2.成员函数setAge给年龄赋值
+		3.成员函数marry(Person& other)    输出name"和"other.name"喜结良缘!";
+		4.成员函数show(); 输出"大家好！我是"gender，name"，今年"age;
+						  输出"爱人是:"lover->name;
+
+private:
+		string name;
+		bool gender;
+		int age;
+		Person *lover;
+		
+#include<iostream>
+using namespace std;
+class Person 
+{
+	public:
+		Person(string n,bool g=true);
+
+		void setAge(int year);
+		void show();
+		void marry(Person &other);
+	private:
+		string name;
+		bool gender;
+		int age;
+		Person *lover;
+};
+
+Person::Person(string n,bool g)
+{
+			name=n;
+			gender = g;
+			age = 0;
+			lover=NULL;
+}
+
+void Person::setAge(int year)
+{
+	this->age = year;
+}
+
+void Person::show()
+{
+	cout<<"大家好！我是"<<(gender?"帅哥":"美女  ")<<name<<"，今年"<<age<<endl;
+	cout<<"爱人是:"<<lover->name<<endl;
+}
+
+void Person::marry(Person& other)
+{
+	lover= &other; 
+	other.lover = this;//this 指针 指向当前对象
+	cout<<name<<"和"<<other.name<<"喜结良缘!"<<endl;
+
+	cout<<this<<endl;
+}
+int main()
+{
+	Person b("邓超",true);
+	Person a("孙俪",false);
+	a.setAge(20);
+	b.setAge(38);
+
+	a.marry(b);
+	a.show();
+	//b.marry(a);
+	b.show();
+}
+
+//练习3：定义扑克类，私有属性color，point，创建54张牌存入数组中
+
+头文件
+#ifndef POKER_H
+#define POKER_H
+
+#include <string>
+
+using namespace std;
+
+class Poker
+{
+public:
+	Poker(string c, string p);
+	Poker(string c);
+	string toString();
+private:
+	string color;
+	string point;
+};
+
+#endif
+源文件
+
+#include "poker.h"
+
+Poker::Poker(string c, string p):
+	color(c),
+	point(p)
+{}
+
+Poker::Poker(string c):
+	color(c),
+	point("")
+{}
+
+string Poker::toString()
+{
+	return color+point;
+}
+
+main
+#include <iostream>
+#include "poker.h"
+
+using namespace std;
+
+
+int main()
+{
+	Poker** pokers = new Poker*[54];
+	string colors[4] = {"红桃","黑桃","方块","草花"};
+	string points[13] = {"A","2","3","4","5","6","7","8","9","10","J","Q","K"};
+	int index = 0;
+	for(int i = 0;i < 4;i++)
+	{
+		for(int j = 0;j < 13;j++)
+		{
+			pokers[index++] = new Poker(colors[i], points[j]);
+		}
+	}
+	pokers[index++] = new Poker("大王");
+	pokers[index] = new Poker("小王");
+
+	for(int i = 0;i < 54;i++)
+	{
+		cout<<pokers[i]->toString()<<endl;
+	}
+	return 0;
+}
+
+/**********************************************************
+
+			day4
+********************************************************/
+//练习：
+1、Student类
+1.私有成员score，name
+2.构造函数传入score，name
+3.公有函数setScore给score赋值
+4.公有函数show显示成绩和名字
+2、Teacher类
+1.Student* students[5]私有数组保存学生对象
+2.公有构造函数，给students数组赋值
+3.公有函数randHappyBoy()随机抽取一个学生
+4.公有函数hehe()将随机抽取的这个学生改为0分
+5.公有函数show()显示最终的所有学生成绩
+
+
+
+
+///////////////////////////////////////////////////////11111111111111111111111111
+#include <iostream>
+#include <string>
+#include <cstdlib>
+
+using namespace std;
+
+class Student
+{
+private:
+	int score;
+	string name;
+public:
+	Student(int score, string name):score(score),name(name){}
+	void setScore(int score)
+	{
+		this->score = score;
+	}
+
+	void show()
+	{
+		cout<<name<<"  "<<score<<endl;
+	}
+};	
+----------------------------------------------------------------------
+#define STUDENT_NUM 5/////////////换成宏定义
+class Teacher
+{
+private:
+	Student* students[STUDENT_NUM];
+public:
+	Teacher()
+	{
+		srand(time(0));
+		string names[] = {"小明","小强","小红","小绿","小兰"};
+		for(int i = 0;i < STUDENT_NUM;i++)
+		{
+			students[i] = new Student(rand()%100,names[i]);
+		}
+	}
+
+	Student& randHappyBoy()
+	{
+		return *students[rand()%STUDENT_NUM];
+	}
+
+	void hehe()
+	{
+		randHappyBoy().setScore(0);
+	}
+
+	void show()
+	{
+		for(int i = 0;i < STUDENT_NUM;i++)
+		{
+			students[i]->show();
+		}
+	}
+};
+--------------------------------------------------
+int main()
+{
+	Teacher* pt = new Teacher();
+	pt->hehe();
+	pt->show();
+}
+
+////////////////////////////////////////////////////////22222222222222222222222222
+student.h
+#ifndef STUDENT_H
+#define STUDENT_H
+
+#include <string>
+
+using namespace std;
+
+class Student
+{
+public:
+	Student(int score, string name);
+	void setScore(int score);
+	void show();
+private:
+	int score;
+	string name;
+};
+
+#endif
+---------------------------------------------
+student.cpp
+#include "student.h"
+#include <iostream>
+
+using namespace std;
+
+Student::Student(int score, string name):
+	score(score),
+	name(name)
+{}
+
+void Student::setScore(int score)
+{
+	this->score = score;
+}
+
+void Student::show()
+{
+	cout<<name<<" "<<score<<endl;
+}
+---------------------------------------------------
+teacher.h
+#ifndef TEACHER_H
+#define TEACHER_H
+
+#include "student.h"
+#define STUDENT_NUM 5
+
+class Teacher
+{
+public:
+	Teacher();
+	Student* randHappyBoy();
+	void hehe(Student* happyBoy);
+	void show();
+private:
+	Student* students[STUDENT_NUM];
+};
+
+#endif
+------------------------------------------------------
+teacher.cpp
+#include "teacher.h"
+#include <ctime>
+#include <cstdlib>
+
+Teacher::Teacher()
+{
+	students[0] = new Student(80, "流川枫");
+	students[1] = new Student(59, "樱木花道");
+	students[2] = new Student(88, "赤木刚宪");
+	students[3] = new Student(70, "三井寿");
+	students[4] = new Student(60, "宫城良田");
+	srand(time(0));
+}
+
+Student* Teacher::randHappyBoy()
+{
+	return students[rand()%STUDENT_NUM];
+}
+/*
+Student& Teacher::randHappyBoy()
+{
+	return* students[rand()%STUDENT_NUM];
+}
+void Teacher::hehe(Student& happyBoy)
+{
+	happyBoy.setScore(0);
+}
+
+
+*/
+void Teacher::hehe(Student* happyBoy)
+{
+	happyBoy->setScore(0);
+}
+
+void Teacher::show()
+{
+	for(int i = 0;i < STUDENT_NUM;i++)
+	{
+		students[i]->show();
+	}
+}
+----------------------------------------------------------
+main
+#include <iostream>
+#include "teacher.h"
+#include "student.h"
+
+using namespace std;
+
+int main()
+{
+	Teacher t;
+	Student* happyBoy = t.randHappyBoy();
+	t.hehe(happyBoy);
+	/*
+	Student& happyBoy = t.randHappyBoy();
+	t.hehe(happyBoy);
+	*/
+	t.show();
+	return 0;
+}
+
+
+//练习：
+设计一个Book类包含图书的书名，作者成员 其中：书名和作者用字符型指针
+	1.构造函数为作者及书名指针开辟空间并将传入的书名和作者拷贝到数组中Book(char* name, char* author)
+	2.一个析构函数，删除书名和作者数组
+	3.成员函数print()输出数据
+
+#include <iostream>
+#include <cstring>
+
+using namespace std;
+
+class Book
+{
+private:
+	char* name;
+	char* author;
+public:
+	Book(const char* name, const char* author)//  不加const 会报警告
+	{
+		this->name = new char[strlen(name)+1];
+		this->author = new char[strlen(author)+1];
+		strcpy(this->name, name);
+		strcpy(this->author, author);
+	}
+
+	~Book()
+	{
+		delete[] name;
+		delete[] author;
+	}
+
+	void print()
+	{
+		cout<<name<<" "<<author<<endl;
+	}
+};
+
+int main()
+{
+	Book* b = new Book("斗破苍穹","天蚕土豆");
+	b->print();
+	delete b;
+	///////////////////////////////自动调用析构函数
+	{
+		Book b ("斗破苍穹","天蚕土豆");
+		b.print();
+	}
+}
+
+
+/*************************************************
+				day5
+
+**************************************************/
+//示例练习：	Time 类，私有成员 时h，分m，秒s
+						 公有构造
+						 公有函数display(Date& d)
+				Date类   友元Time类中的函数display()
+				         私有成员 年year 月mon 日 day
+						 公有构造
+public.h
+
+#ifndef PUBLIC_H
+#define PUBLIC_H
+
+#include "time.h"
+#include "date.h"
+
+#endif
+
+date.h
+#ifndef DATE_H
+#define DATE_H
+
+#include "public.h"
+
+class Time;
+
+class Date
+{
+friend void Time::display(Date& d);
+public:
+	Date(int y, int m, int d);
+private:
+	int year;
+	int month;
+	int day;
+};
+
+#endif
+
+date.cpp
+
+#include "public.h"
+
+Date::Date(int y, int m, int d):year(y),month(m),day(d)
+{
+
+}
+
+time.h
+
+#ifndef TIME_H
+#define TIME_H
+
+#include "public.h"
+
+class Date;
+
+class Time
+{
+public:
+	Time(int h, int m, int s);
+	void display(Date& d);
+private:
+	int h;
+	int m;
+	int s;
+};
+
+#endif
+
+time.cpp
+
+#include "public.h"
+#include <iostream>
+
+using namespace std;
+
+Time::Time(int h, int m, int s):h(h),m(m),s(s)
+{
+
+}
+
+void Time::display(Date& d)
+{
+	cout<<h<<" "<<m<<" "<<s<<endl;
+	cout<<d.year<<" "<<d.month<<" "<<d.day<<endl;
+}
+
+main
+
+#include<iostream>
+#include "public.h"
+using namespace std;
+
+int main()
+{
+	Time t(1,2,3);
+	Date d(4,5,6);
+	t.display(d);
+	return 0;
+}
+
+//练习：
+1.有个学生类Student 
+
+   包括：私有成员：姓名 成绩  
+   void setData(string name, int score)给成员变量赋值
+   
+2.在main定义student数组5个元素并赋值 Students[5]
+3.设计一个全局友元函数 比较两个学生的成绩的高低int compare(Student&, Student&);
+4.求出最高分和最低分的学生
+-------------------------------------------
+#include<iostream>
+#include <string>
+using namespace std;
+class Student;
+int compare(Student& s1, Student& s2);
+
+class Student
+{
+friend int compare(Student&, Student&);
+public:
+	void setData(string name, int score)
+	{
+		this->name = name;
+		this->score = score;
+	}
+	void show()
+	{
+		cout<<name<<" "<<score<<endl;
+	}
+private:
+	string name;
+	int score;
+};
+
+int main()
+{
+	Student students[5];
+	students[0].setData("大娃",1);
+	students[1].setData("二娃",2);
+	students[2].setData("三娃",3);
+	students[3].setData("四娃",4);
+	students[4].setData("五娃",5);
+
+	int max = 0;
+	int min = 0;
+	for(int i = 1;i < 5;i++)
+	{	
+		if(compare(students[i], students[max]) == 1)
+		{
+			max = i;
+		}
+		else if(compare(students[i], students[min]) == -1)
+		{
+			min = i;
+		}
+	}
+	students[max].show();
+	students[min].show();
+	return 0;
+}
+
+int compare(Student& s1, Student& s2)
+{
+	if(s2.score < s1.score)
+	{
+		return 1;
+	}
+	else if(s1.score < s2.score)
+	{
+		return -1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+//练习：
+1.有个学生类Student 包括私有成员：姓名 成绩 ;  student构造函数对成员赋值
+2.设计一个友元类Teacher 
+	1)teacher类中包含 私有成员数组 student s[5];  构造函数对数组元素赋值
+	2)teacher类对学生数组进行排序  公有成员函数sort(); 降序
+	3)teacher类输出成绩对应等级  公有函数show(); >=90 优 80-89 良  70-79中 60-69及格  <60不及格  
+
+teacher.h
+
+#ifndef TEACHER_H
+#define TEACHER_H
+
+#include "student.h"
+
+class Teacher
+{
+public:
+	Teacher();
+	void sort();
+	void show();
+private:
+	Student students[5];
+};
+
+#endif
+
+teacher.cpp
+
+#include "public.h"
+#include <iostream>
+
+using namespace std;
+
+Teacher::Teacher()
+{
+	students[0] = Student("玉帝", 90);
+	students[1] = Student("哪吒", 20);
+	students[2] = Student("李靖", 66);
+	students[3] = Student("龙王", 40);
+	students[4] = Student("敖丙", 5);
+}
+
+void Teacher::sort()
+{
+	for(int i = 0;i < 4;i++)
+	{
+		for(int j = 0;j < 4-i;j++)
+		{
+			if(students[j].score < students[j+1].score)
+			{
+				Student temp = students[j];
+				//Student temp(students[j]);
+				students[j] = students[j+1];
+				students[j+1] = temp;
+			}
+		}
+	}
+}
+
+void Teacher::show()
+{
+	for(int i = 0;i < 5;i++)
+	{
+		cout<<students[i].name<<" ";
+		if(students[i].score >= 90)
+		{
+			cout<<"优秀"<<endl;
+		}
+		else if(students[i].score >= 80)
+		{
+			cout<<"良"<<endl;
+		}
+		else if(students[i].score >= 70)
+		{
+			cout<<"中"<<endl;
+		}
+		else if(students[i].score >= 60)
+		{
+			cout<<"及格"<<endl;
+		}
+		else
+		{
+			cout<<"不及格"<<endl;
+		}
+	}
+}
+
+student.h
+
+#ifndef STUDENT_H
+#define STUDENT_H
+
+#include "public.h"
+#include <string>
+
+using namespace std;
+
+class Student
+{
+friend class Teacher;
+public:
+	Student(){}
+	Student(string name, int score);
+private:
+	string name;
+	int score;
+};
+
+#endif
+
+
+student.cpp
+
+#include "public.h"
+
+Student::Student(string name, int score):name(name),score(score)
+{
+
+}
+
+main
+
+#include<iostream>
+#include "teacher.h"
+using namespace std;
+
+
+int main()
+{
+	Teacher t;
+	t.sort();
+	t.show();
+	return 0;
+}
+---------------------------------------下面新
+student.h
+#ifndef STUDENT_H
+#define STUDENT_H
+
+#include <string>
+
+using namespace std;
+
+class Student
+{
+friend class Teacher;
+public:
+	Student(string name, int score);
+private:
+	string name;
+	int score;
+};
+
+#endif
+student.cpp
+#include "student.h"
+
+using namespace std;
+
+Student::Student(string name, int score):name(name),score(score)
+{
+
+}
+teacher.h
+#include "student.h"
+
+class Teacher
+{
+public:
+	Teacher();
+	void sort();
+	void show();
+private:
+	Student* students[5];
+};
+teacher.cpp
+#include "teacher.h"
+#include <iostream>
+
+using namespace std;
+
+Teacher::Teacher()
+{
+	students[0] = new Student("易建联", 88);
+	students[1] = new Student("周琦", 80);
+	students[2] = new Student("郭艾伦", 90);
+	students[3] = new Student("赵继伟", 71);
+	students[4] = new Student("阿布都", 60);
+}
+
+void Teacher::sort()
+{
+	for(int i = 0;i < 4;i++)
+	{
+		for(int j = 0;j < 4-i;j++)
+		{
+			if(students[j]->score < students[j+1]->score)
+			{
+				Student* temp = students[j];
+				students[j] = students[j+1];
+				students[j+1] = temp;
+			}
+		}
+	}
+}
+
+void Teacher::show()
+{
+	for(int i = 0;i < 5;i++)
+	{
+		cout<<students[i]->name;
+		if(students[i]->score > 90)
+		{
+			cout<<"优秀"<<endl;
+		}
+		else if(students[i]->score > 80)
+		{
+			cout<<"良"<<endl;
+		}
+		else if(students[i]->score > 70)
+		{
+			cout<<"中"<<endl;
+		}
+		else
+		{
+			cout<<"不及格"<<endl;
+		}
+		
+	}
+}
+main
+#include <iostream>
+#include "teacher.h"
+using namespace std;
+
+
+int main()
+{
+	Teacher t;
+	t.sort();
+	t.show();
+	return 0;
+}
+
+---------------------------------------------------
+
+//练习：给出三角形三边 a、b、c 求三角形周长 
+只有a+b>c b+c>a a+c>b 才能构成三角形 设置异常处理 对不符合三角形条件的 输出警告信息 不予计算
+异常类 class TriExcept  检测方法 check
+
+
+#include<iostream>
+using namespace std;
+
+class TriExcept
+{
+public:
+	void show()
+	{
+		cout<<"三角异常"<<endl;
+	}
+};
+
+void check(int a, int b, int c)
+{
+	if(a+b<=c || a+c<=b || b+c<=a)
+	{
+		TriExcept e;
+		throw e;
+	}
+}
+
+int main()
+{
+	int a, b, c;
+	cin>>a>>b>>c;
+	int l;
+	try
+	{
+		check(a, b, c);
+		l = a+b+c;
+	}
+	catch(TriExcept e)
+	{
+		e.show();
+		return 0;
+	}
+	cout<<l<<endl;
+	return 0;
+}
+----------------------------------------------------------
+t.h
+#ifndef T_H
+#define T_H
+
+class T
+{
+public:
+	T(int a, int b, int c);
+	int length();
+private:
+	int a;
+	int b;
+	int c;
+};
+
+#endif
+
+t.cpp
+#include "t.h"
+#include "exceptt.h"
+
+T::T(int a, int b, int c):a(a),b(b),c(c)
+{}
+
+int T::length()
+{
+	if(a+b<=c || a+c<=b || b+c<=a)
+	{
+		ExceptT et;
+		throw et;
+	}
+	return a+b+c;
+}
+
+exceptt.h
+#ifndef EXCEPT_H
+#define EXCEPT_H
+
+class ExceptT
+{
+public:
+	void print();
+};
+
+#endif
+
+exceptt.cpp
+#include "exceptt.h"
+#include <iostream>
+
+using namespace std;
+
+void ExceptT::print()
+{
+	cout<<"三角牌异常"<<endl;
+}
+
+main
+#include <iostream>
+#include "t.h"
+#include "exceptt.h"
+using namespace std;
+
+
+int main()
+{
+	T t(3, 4, 5);
+	try
+	{
+		int l = t.length();
+		cout<<l<<endl;
+	}
+	catch(ExceptT et)
+	{
+		et.print();
+	}
+	return 0;
+}
+
+--------------------------------------------------
+单例模式：
+头文件
+
+#ifndef ONE_H
+#define ONE_H
+
+class One
+{
+private:
+	int num;
+public:
+	static One* getInstance();
+	void setNum(int num);
+	int getNum();
+private:
+	One(){}
+	One(const One& o){}
+	static One* instance;
+};
+
+#endif
+
+源文件
+
+#include "one.h"
+#include <cstdio>
+
+One* One::instance = NULL;
+
+One* One::getInstance()
+{
+	if(instance == NULL)
+	{
+		instance = new One();
+	}
+	return instance;
+}
+
+void One::setNum(int num)
+{
+	this->num = num;
+}
+
+int One::getNum()
+{
+	return num;
+}
+
+main
+#include <iostream>
+#include "one.h"
+
+using namespace std;
+
+int main()
+{
+	One::getInstance()->setNum(10);
+
+	cout<<One::getInstance()->getNum()<<endl;
+	return 0;
+}
+----------------------------------------
+
+头文件
+#ifndef SUN_H
+#define SUN_H
+
+
+class Sun
+{
+public:
+    static Sun* getInstance();
+    void fire();
+    int getHot();
+private:
+    Sun();
+    Sun(const Sun& other);
+    static Sun *instance;
+    
+    int hot;
+};
+
+#endif // SUN_H
+
+源文件
+#include "sun.h"
+#include <cstdio>
+
+Sun* Sun::instance = NULL;
+
+Sun *Sun::getInstance()
+{
+    if(instance == NULL)
+    {
+        instance = new Sun();
+    }
+    return instance;
+}
+
+void Sun::fire()
+{ 
+    hot++;
+}
+
+int Sun::getHot()
+{
+    return hot;
+}
+
+Sun::Sun():hot(28)
+{
+    
+}
+
+Sun::Sun(const Sun &other)
+{
+    
+}
+main
+#include <iostream>
+#include "sun.h"
+
+using namespace std;
+
+int main()
+{
+    Sun* s = Sun::getInstance();
+    Sun* s2 = Sun::getInstance();
+    Sun* s3 = Sun::getInstance();
+    s->fire();
+    s2->fire();
+    cout<<s3->getHot()<<endl;
+    cout<<s<<endl;
+    cout<<s2<<endl;
+    cout<<s3<<endl;
+    return 0;
+}
+
+----------------------------------------------------------示例：
+
+person.h
+
+#ifndef PERSON_H
+#define PERSON_H
+
+#include <string>
+
+using namespace std;
+
+class Person
+{
+private:
+	string name;
+	Person(){}
+	static Person* instance;
+public:
+	string getName();
+	void setName(string name);
+	static Person* getInstance();
+};
+
+
+#endif
+
+person.cpp
+
+#include "person.h"
+
+Person* Person::instance = NULL;
+
+void Person::setName(string name)
+{
+	this->name = name;
+}
+
+Person* Person::getInstance()
+{
+	if(instance == NULL)
+	{
+		instance = new Person;
+	}
+	return instance;
+}
+
+string Person::getName()
+{
+	return name;
+}
+
+test.cpp
+
+#include <iostream>
+#include "person.h"
+
+using namespace std;
+
+int main()
+{
+	Person* p1 = Person::getInstance();
+	Person* p2 = Person::getInstance();
+
+	p1->setName("xiaoming");
+	cout<<p2->getName()<<endl;//输出  xiaoming
+	cout<<p1<<" "<<p2<<endl;//p1 p2 地址相同
+} 
+
+/*************************************************
+
+              day6
+			  
+*************************************************/
+//  函数指针的用处： 把逻辑当做参数传递 是函数指针
+
+成员指针运算符示例：
+#include <iostream>
+using namespace std;
+
+class Person
+{
+public:
+	int age;
+public:
+	Person(int age):age(age){}
+	void show()
+	{
+		cout<<age<<endl;
+	}
+};
+
+int main()
+{
+	-----------------------------------------------
+	指针指向变量：
+	一般情况：person p(10);
+	int *p=&p.age;
+	
+	int person::* p = person::age;
+	
+	person p1(0);
+	fun(p1);
+	p1.show();
+	
+	person p2(0);
+	fun(p2);
+	p2.show();
+	------------------------------------------------
+	
+	Person xiaoming(10);
+	Person xiaohong(20);
+
+	void(Person::*ps)() = &Person::show;
+	(xiaoming.*ps)();
+	(xiaohong.*ps)();
+
+	xiaoming.show();
+	xiaohong.show();
+
+	return 0;
+}
+-------------------------------------------
+void fun(person* obj)//后加 只为演示成员变量
+{
+	int person::* p = &person::age;
+	obj-> *p=10;
+}
+---------------------------------------------
+
+//练习：设计一个三角形类Triange 包含三角形三条边长的私有数据成员
+ //       另有一个重载运算符'+'  以实现求两个三角形周长之和  注意：两个三角形对象相加
+
+头文件
+
+#ifndef TRIANGE_H
+#define TRIANGE_H
+
+
+class Triange
+{
+public:
+    Triange(int a, int b, int c);
+    ~Triange();
+    
+    int operator+(const Triange& other);
+    void show();
+private:
+    int a;
+    int b;
+    int c;
+};
+
+#endif
+
+源文件
+
+#include "Triange.h"
+
+Triange::Triange(int a, int b, int c):a(a),b(b),c(c)
+{
+    
+}
+
+Triange::~Triange()
+{
+    
+}
+
+int Triange::operator+(const Triange &other)
+{
+    int l = a+b+c;
+    int ol = other.a+other.b+other.c;
+    return l+ol;
+}
+
+void Triange::show()
+{
+    
+}
+
+main
+
+#include <iostream>
+#include "Triange.h"
+
+using namespace std;
+
+int main()
+{
+    Triange t1(3,3,3);
+    Triange t2(4,4,4);
+    int l = t1+t2;
+    cout<<l<<endl;
+    return 0;
+}
+
+
+//练习：设计一个学生类 包括姓名和三门成绩(C++ C linux) 利用重载运算符'+=' 将所有学生成绩的和汇总到一个学生对象中
+    string name;
+    int cscore;
+    int cppscore;
+    int linuxscore;
+
+头文件
+#ifndef STUDENT_H
+#define STUDENT_H
+#include <string>
+
+using namespace std;
+
+class Student
+{
+public:
+    Student(string name, int cscore, int cppscore, int linuxscore);
+    Student &operator+=(const Student& other);
+    void show();
+    ~Student();
+private:
+    string name;
+    int cscore;
+    int cppscore;
+    int linuxscore;
+};
+
+#endif // STUDENT_H
+
+源文件 
+#include "student.h"
+#include <iostream>
+
+using namespace std;
+
+
+Student::Student(string name, int cscore, int cppscore, int linuxscore):
+    name(name),
+    cscore(cscore),
+    cppscore(cppscore),
+    linuxscore(linuxscore)
+{
+    
+}
+
+Student &Student::operator+=(const Student &other)
+{
+    cscore += other.cscore;
+    cppscore +=other.cppscore;
+    linuxscore += other.linuxscore;
+    return *this;
+}
+
+void Student::show()
+{
+    cout<<name<<" "<<cscore<<" "<<cppscore<<" "<<linuxscore<<endl;
+}
+
+Student::~Student()
+{
+    
+}
+
+main
+#include <iostream>
+#include "student.h"
+
+using namespace std;
+
+int main()
+{
+    Student students[3] = {
+        Student("大雨",234,45,67),
+        Student("中雨",43,456,67),
+        Student("小雨",3,45,7)
+    };
+    for(int i = 1;i < 3;i++)
+    {
+        students[0] += students[i];
+    }
+    students[0].show();
+    return 0;
+}
+
+
+//练习：在Time类中设计如下重载运算符函数++
+       1.私有成员h m s
+       2.重载后缀++ 让时间编程下一秒
+       3.show函数显示时间
+	   
+	   
+头文件
+#ifndef TIME_H
+#define TIME_H
+
+
+class Time
+{
+public:
+    Time(int h, int m, int s);
+    Time &operator++(int a);
+    void show();
+    ~Time();
+private:
+    int h;
+    int m;
+    int s;
+};
+
+#endif // TIME_H
+源文件
+#include "time.h"
+#include <iostream>
+
+using namespace std;
+
+Time::Time(int h, int m, int s):
+    h(h),
+    m(m),
+    s(s)
+{
+    
+}
+
+Time &Time::operator++(int a)
+{
+    s += 1;
+    m += s/60;
+    h += m/60;
+    
+    s %= 60;
+    m %= 60;
+    h %= 24;
+    return *this;
+}
+
+void Time::show()
+{
+    cout<<h<<":"<<m<<":"<<s<<endl;
+}
+
+Time::~Time()
+{
+    
+}
+main
+#include <iostream>
+#include "time.h"
+#include <windows.h>// win下编程
+
+using namespace std;
+
+int main()
+{
+    Time t(23,59,59);
+	while（true）
+	{
+		  t++;
+		t.show();
+		sleep(1000);
+	}
+  
+    return 0;
+}
+
+综合练习：
+/****************************************/
+/*父类 ：Person类
+*       定义构造函数，通过参数列表形式初始化成员
+	    数据：
+		  名字 name
+		  年龄 age
+*子类： Student类
+		定义构造函数，通过参数列表形式 初始化父类及子类成员
+		数据：
+		  工作 work
+		 成员函数：show()显示数据*/
+/****************************************/
+
+#include <iostream>
+#include <string>
+using namespace std;
+
+class Person{
+public:
+		string name;
+		int age;
+		Person(string name,int age):name(name),age(age)
+		{
+		}
+};
+
+class Student:public Person{
+public:
+		string work;
+		Student(string name,int age,string work):
+		Person(name,age),
+		work(work){}
+		void show(){
+			cout << age <<" " << name << " do " << work<<endl;
+		}
+};
+
+int main(){
+	Student stu("zhangsan",23,"study");
+	stu.show();
+	return 0;
+}
+
+//练习：编写程序 
+设计一个汽车类Vehicle 包含的数据成员：车轮个数wheels,车重weight 
+小车类car是汽车类的派生类 包含数据成员:载人数passenger_load 
+卡车类Truck是汽车类的派生类 包含： 载人数passenger_load  载重量pay_load
+每个类都有相关数据的输出方法show显示所有的成员
+Vehicle.h
+#ifndef VEHICLE_H
+#define VEHICLE_H
+
+
+class Vehicle
+{
+public:
+    Vehicle(int wh, int we);
+
+    void show();
+protected:
+    int wheels;
+    int weight;
+};
+
+#endif // VEHICLE_H
+Vehicle.cpp
+
+#include "vehicle.h"
+#include <string>
+#include <iostream>
+
+using namespace std;
+
+
+Vehicle::Vehicle(int wh, int we):
+    wheels(wh),
+    weight(we)
+{
+    
+}
+
+void Vehicle::show()
+{
+    cout<<wheels<<" "<<weight<<endl;
+}
+
+car.h
+#ifndef CAR_H
+#define CAR_H
+
+#include "vehicle.h"
+
+class Car : public Vehicle
+{
+public:
+    Car(int wh, int we, int pl);
+    void show();
+private:
+    int passenger_load;
+};
+
+#endif // CAR_H
+
+car.cpp
+#include "car.h"
+#include <iostream>
+
+using namespace std;
+
+Car::Car(int wh, int we, int pl):
+    Vehicle(wh, we),
+    passenger_load(pl)
+{
+    
+}
+
+void Car::show()
+{
+	Vehicle::show();
+	cout<<passenger_load<<endl;
+    //cout<<this->wheels<<" "<<this->weight<<" "<<this->passenger_load<<endl;
+}
+
+truck.h
+#ifndef TRUCK_H
+#define TRUCK_H
+
+#include "vehicle.h"
+
+class Truck : public Vehicle
+{
+public:
+    Truck(int wh, int we, int pas, int pay);
+    void show();
+private:
+    int passenger_load;
+    int pay_load;
+};
+
+#endif // TRUCK_H
+
+truck.cpp
+#include "truck.h"
+#include <iostream>
+
+using namespace std;
+
+
+Truck::Truck(int wh, int we, int pas, int pay):
+    Vehicle(wh, we),
+    passenger_load(pas),
+    pay_load(pay)
+{
+    
+}
+
+void Truck::show()
+{
+    Vehicle::show();
+    cout<<passenger_load<<" "<<pay_load<<endl;
+}
+
+main
+#include <iostream>
+#include "car.h"
+#include "truck.h"
+
+using namespace std;
+
+int main()
+{
+    Car c(4, 1300, 5);
+    Truck t(8, 13000, 3, 10000);
+    c.show();
+    cout<<"--------------"<<endl;
+    t.show();
+    return 0;
+}
+
+练习：
+先设计一个Point类 包含：x，y(坐标)  --基类
+由Point类派生出一个Circle类 增加数据成员r(半径)
+Circle类定义函数计算面积
+由Circle类为直接基类派生出一个Cylinder（圆柱体）类 再增加成员h(高)
+Cylinder（圆柱体）类定义函数计算体积
+
+circle.h
+#ifndef CIRCLE_H
+#define CIRCLE_H
+
+#include "point.h"
+
+class Circle : public Point
+{
+public:
+    Circle(int x, int y, int r);
+    int area();
+protected:
+    int r;
+};
+
+#endif // CIRCLE_H
+
+circle.cpp
+#include "circle.h"
+
+Circle::Circle(int x, int y, int r):
+    Point(x, y),
+    r(r)
+{
+    
+}
+
+int Circle::area()
+{
+    return 3.14*r*r;
+}
+
+Cylinder.h
+#ifndef CYLINDER_H
+#define CYLINDER_H
+
+#include "circle.h"
+
+
+class Cylinder : public Circle
+{
+public:
+    Cylinder(int x, int y, int r, int h);
+    int volume();
+private:
+    int h;
+};
+
+#endif // CYLINDER_H
+
+Cylinder.cpp
+#include "cylinder.h"
+
+
+Cylinder::Cylinder(int x, int y, int r, int h):
+    Circle(x, y, r),
+    h(h)
+{
+    
+}
+
+int Cylinder::volume()
+{
+    return area()*h;
+}
+
+Point.h
+#ifndef POINT_H
+#define POINT_H
+
+
+class Point
+{
+public:
+    Point(int x, int y);
+    
+protected:
+    int x;
+    int y;
+};
+
+#endif // POINT_H
+
+Point.cpp
+#include "point.h"
+
+Point::Point(int x, int y):
+    x(x),
+    y(y)
+{
+    
+}  
+
+main
+#include <iostream>
+#include "circle.h"
+#include "cylinder.h"
+
+using namespace std;
+
+int main()
+{
+    Circle cir(1, 1, 10);
+    cout<<cir.area()<<endl;
+    Cylinder cy(1, 1, 10, 5);
+    cout<<cy.volume()<<endl;
+    return 0;
+}
+
+练习：
+定义一个类Animal
+属性：名称 颜色 腿条数
+写构造方法：给属性赋值
+每个属性私有权限，可以通过get，set方法赋值
+方法：eat()，move()无参数方法
+
+定义一个子类Sheep
+咩咩叫：roar()
+
+定义一个子类Tiger
+奔跑run()
+
+创建测试类
+创建四条腿白色山羊，调用相关方法
+创建四条腿白色东北虎，调用相关方法
+
+animal.h
+#ifndef ANIMAL_H
+#define ANIMAL_H
+
+#include <string>
+
+using namespace std;
+
+class Animal
+{
+public:
+    Animal(string name, string color, int legs);
+    string getName();
+    void setName(string name);
+    string getColor();
+    void setColor(string color);
+    int getLegs();
+    void setLegs(int legs);
+    void eat();
+    void move();
+private:
+    string name;  
+    string color;
+    int legs;
+};
+
+#endif // ANIMAL_H
+animal.cpp
+#include "animal.h"
+#include <iostream>
+
+using namespace std;
+
+
+Animal::Animal(string name, string color, int legs):
+    name(name),
+    color(color),
+    legs(legs)
+{
+    
+}
+
+string Animal::getName()
+{
+    return name;
+}
+
+void Animal::setName(string name)
+{
+    this->name = name;
+}
+
+string Animal::getColor()
+{
+    return color;
+}
+
+void Animal::setColor(string color)
+{
+    this->color = color;
+}
+
+int Animal::getLegs()
+{
+    return legs;
+}
+
+void Animal::setLegs(int legs)
+{
+    this->legs = legs;
+}
+
+void Animal::eat()
+{
+    cout<<name<<"岔开"<<legs<<"条腿吃"<<endl;
+}
+
+void Animal::move()
+{
+    cout<<name<<"迈开"<<legs<<"条腿跑"<<endl;
+}
+
+sheep.h
+#ifndef SHEEP_H
+#define SHEEP_H
+
+#include <string>
+#include "animal.h"
+
+using namespace std;
+
+class Sheep : public Animal
+{
+public:
+    Sheep(string name, string color, int legs);
+    void roar();
+};
+
+#endif // SHEEP_H
+
+sheep.cpp
+#include "sheep.h"
+#include <iostream>
+
+
+Sheep::Sheep(string name, string color, int legs):
+    Animal(name, color, legs)
+{
+    
+}
+
+void Sheep::roar()
+{
+    cout<<"咩咩叫"<<endl;
+}
+
+
+tiger.h
+#ifndef TIGER_H
+#define TIGER_H
+
+#include "animal.h"
+#include <string>
+
+using namespace std;
+
+class Tiger : public Animal
+{
+public:
+    Tiger(string name, string color, int legs);
+    void run();
+};
+
+#endif // TIGER_H
+
+tiger.cpp
+#include "tiger.h"
+#include <iostream>
+
+
+Tiger::Tiger(string name, string color, int legs):
+    Animal(name, color, legs)
+{
+    
+}
+
+void Tiger::run()
+{
+    cout<<"奔跑"<<endl;
+}
+
+main
+#include <iostream>
+#include "tiger.h"
+#include "sheep.h"
+
+using namespace std;
+
+int main()
+{
+    Sheep s("山羊","白色",4);
+    s.eat();
+    s.move();
+    s.roar();
+    
+    Tiger t("东北虎","白色",4);
+    t.eat();
+    t.move();
+    t.run();
+    return 0;
+}
+
+/************************************************
+
+			day7
+			
+************************************************/	
+
+//练习：
+1.定义基类Developer，有虚函数develop()
+2.定义大神类Manito和菜鸟类SmallBird继承Developer，重写develop()
+3.定义公司类Company，定义成员函数招聘recruit()随机生成一个开发者对象，返回值为Developer*
+4.定义Company类的成员函数work(Developer* )，调用Developer的develop()
+5.main中创建Company对象，调用recruit()获得一个Developer，然后调用work()传入Developer参数
+
+
+#ifndef MANDeveloper.h
+#ifndef DEVELOPER_H
+#define DEVELOPER_H
+
+
+class Developer
+{
+public:
+    Developer();
+    ~Developer();
+    
+    virtual void develop();
+};
+
+#endif // DEVELOPER_H
+Developer.cpp
+#include "developer.h"
+
+Developer::Developer()
+{
+    
+}
+
+Developer::~Developer()
+{
+    
+}
+
+void Developer::develop()
+{
+    
+}
+
+Company.h
+#ifndef COMPANY_H
+#define COMPANY_H
+
+#include "developer.h"
+
+class Company
+{
+public:
+    Company();
+    Developer* recruit();
+    void work(Developer* dev);
+};
+
+#endif // COMPANY_H
+
+Company.cpp
+
+#include "company.h"
+#include <ctime>
+#include <cstdlib>
+#include "manito.h"
+#include "smallbird.h"
+
+Company::Company()
+{
+    srand(time(0));
+}
+
+Developer *Company::recruit()
+{
+    switch(rand()%2)
+    {
+    case 0:
+        return new Manito();
+    case 1:
+        return new SmallBird();
+    }
+}
+
+void Company::work(Developer *dev)
+{
+    dev->develop();
+}
+
+Manito.hITO_H
+#define MANITO_H
+
+#include "developer.h"
+
+class Manito : public Developer
+{
+public:
+    void develop();
+};
+
+#endif // MANITO_H
+
+Manito.cpp
+#include "manito.h"
+#include <iostream>
+
+using namespace std;
+
+void Manito::develop()
+{
+    cout<<"大神开发"<<endl;
+}
+
+SmallBird.h
+
+#ifndef SMALLBIRD_H
+#define SMALLBIRD_H
+
+#include "developer.h"
+
+class SmallBird : public Developer
+{
+public:
+    void develop();
+};
+
+#endif // SMALLBIRD_H
+
+SmallBird.cpp
+
+#include "smallbird.h"
+#include <iostream>
+
+using namespace std;
+
+void SmallBird::develop()
+{
+    cout<<"小鸟开发"<<endl;
+}
+		
+练习：设计一个圆类Circle(半径)和一个桌子类Table(高度和颜色)  再设计一个圆桌类RoundTable 
+	它从前两个类派生 
+要求：输出一个圆桌的高度 面积和颜色
+
+Circle.h
+#ifndef CIRCLE_H
+#define CIRCLE_H
+
+
+class Circle
+{
+public:
+    Circle(int r);
+
+protected:
+    int r;
+};
+
+#endif // CIRCLE_H
+
+Circle.cpp
+#include "circle.h"
+
+
+Circle::Circle(int r):r(r)
+{
+    
+}
+Table.h
+#ifndef TABLE_H
+#define TABLE_H
+
+#include <string>
+
+using namespace std;
+
+class Table
+{
+public:
+    Table(string color, int height);
+protected:
+    string color;
+    int height;
+};
+
+#endif // TABLE_H
+Table.cpp
+#include "table.h"
+
+Table::Table(string color, int height):
+    color(color),
+    height(height)
+{
+    
+}
+
+RoundTable.h
+#ifndef ROUNDTABLE_H
+#define ROUNDTABLE_H
+
+#include "table.h"
+#include "circle.h"
+#include <string>
+
+
+class RoundTable : public Circle, public Table
+{
+public:
+    RoundTable(int height, std::string color, int r);
+    void show();
+};
+
+#endif // ROUNDTABLE_H
+RoundTable.cpp
+#include "roundtable.h"
+#include <iostream>
+
+using namespace std;
+
+
+RoundTable::RoundTable(int height, string color, int r):
+    Circle(r),
+    Table(color, height)
+{
+    
+}
+
+void RoundTable::show()
+{
+    cout<<color<<" "<<height<<" "<<3.14*r*r<<endl;
+}
+
+main
+#include <iostream>
+#include "roundtable.h"
+
+using namespace std;
+
+int main()
+{
+    RoundTable rt(10, "白色", 5);
+    rt.show();
+    return 0;
+}
+
+练习：设计一个虚基类Base 包括：protected数据姓名和年龄及 成员函数eat()
+由它派生出领导类Leader 包含私有数据职务和部门及 函数lead()
+再有Base类派生出工程师类Engineer 包含私有数据职称 专业及 函数develop()
+然后由Leader类和Engineer类派生出主任工程师类Boss
+
+base.h
+#ifndef BASE_H
+#define BASE_H
+
+#include <string>
+
+using namespace std;
+
+class Base
+{
+public:
+    Base(string name, int age);
+    void eat();
+protected:
+    string name;
+    int age;
+};
+
+#endif // BASE_H
+
+base.cpp
+#include "base.h"
+#include <iostream>
+
+Base::Base(string name, int age):
+    name(name),
+    age(age)
+{
+    cout<<"base create"<<endl;
+}
+
+void Base::eat()
+{
+    cout<<"吃"<<endl;
+}
+
+leader.h
+#ifndef LEADER_H
+#define LEADER_H
+
+#include "base.h"
+#include <string>
+
+using namespace std;
+
+class Leader : virtual public Base
+{
+public:
+    Leader(string name, int age, string dep, string stu);protected:
+    string department;
+    string study;
+    void lead();
+
+};
+
+#endif // LEADER_H
+
+leader.cpp
+
+#include "leader.h"
+#include <iostream>
+
+Leader::Leader(string name, int age, string dep, string stu):
+    Base(name, age),
+    department(dep),
+    study(stu)
+{
+    cout<<"leader create"<<endl;
+}
+
+void Leader::lead()
+{
+    cout<<"leader lead"<<endl;
+}
+
+Engineer.h
+#ifndef ENGINEER_H
+#define ENGINEER_H
+
+#include <string>
+#include "base.h"
+
+using namespace std;
+
+class Engineer : virtual public Base
+{
+public:
+    Engineer(string name, int age, string pro, string major);
+    void develop();
+protected:
+    string professional;
+    string major;
+};
+
+#endif // ENGINEER_H
+Engineer.cpp
+#include "engineer.h"
+#include <iostream>
+
+Engineer::Engineer(string name, int age, string pro, string major):
+    Base(name, age),
+    professional(pro),
+    major(major)
+{
+    cout<<"Engineer create"<<endl;   
+}
+
+void Engineer::develop()
+{
+    cout<<"Engineer develop"<<endl;
+}
+
+boss.h
+#ifndef BOSS_H
+#define BOSS_H
+
+#include "leader.h"
+#include "engineer.h"
+
+class Boss : public Leader, public Engineer
+{
+public:
+    Boss(string name, int age, string dep, string stu, string pro, string major);
+    
+};
+
+#endif // BOSS_H
+boss.cpp
+#include "boss.h"
+#include <iostream>
+
+using namespace std;
+
+Boss::Boss(string name, int age, string dep, string stu, string pro, string major):
+    Base(name, age),
+    Leader(name, age, dep, stu),
+    Engineer(name, age, pro, major)
+{
+    cout<<"boss create"<<endl;
+}
+
+main
+
+int main()
+{
+    Boss b("小明",18,"教务处","老师","物理专业","领导");
+    b.develop();
+    b.eat();
+    b.Lead();
+    return 0;
+}
+
+//练习：定义一个抽象类形状Shape
+纯虚函数：获得周长：int getPerimeter();
+          得到形状：string getType();
+子类三角形：Triangle
+   属性：边长 a、b、c   
+子类圆形：Circle
+   属性：半径
+子类正方形：Square
+  属性：边长a  
+ 
+shap.h
+#ifndef SHAP_H
+#define SHAP_H
+
+#include <string>
+
+using namespace std;
+
+class Shap
+{
+public:    
+    virtual int getPerimeter() = 0;
+    virtual string getType() = 0;
+};
+
+#endif // SHAP_H
+
+circle.h
+#ifndef CIRCLE_H
+#define CIRCLE_H
+
+#include "shap.h"
+#include <string>
+
+using namespace std;
+
+class Circle : public Shap
+{
+public:
+    Circle(int r);
+    
+    int getPerimeter();
+    string getType();
+private:
+    int r;
+};
+
+#endif // CIRCLE_H
+
+circle.cpp
+#include "circle.h"
+
+Circle::Circle(int r):r(r)
+{
+    
+}
+
+int Circle::getPerimeter()
+{
+    return 2*r*3.14;
+}
+
+string Circle::getType()
+{
+    return "圆形";
+}
+
+square.h
+#ifndef SQUARE_H
+#define SQUARE_H
+
+#include "shap.h"
+#include <string>
+
+using namespace std;
+
+class Square : public Shap
+{
+public:
+    Square(int a);
+    int getPerimeter();
+    string getType();
+private:
+    int a;
+};
+
+#endif // SQUARE_H
+
+square.cpp
+#include "square.h"
+
+Square::Square(int a):a(a)
+{
+    
+}
+
+int Square::getPerimeter()
+{
+    return 4*a;
+}
+
+string Square::getType()
+{
+    return "正方形";
+}
+
+Triangle.h
+
+#ifndef TRIANGLE_H
+#define TRIANGLE_H
+
+#include "shap.h"
+#include <string>
+
+using namespace std;
+
+class Triangle : public Shap
+{
+public:
+    Triangle(int a, int b, int c);
+    int getPerimeter();
+    string getType();
+private:
+    int a;
+    int b;
+    int c;
+};
+
+#endif // TRIANGLE_H
+
+Triangle.cpp
+
+#include "triangle.h"
+
+
+Triangle::Triangle(int a, int b, int c):
+    a(a),
+    b(b),
+    c(c)
+{
+    
+}
+
+int Triangle::getPerimeter()
+{
+    return a+b+c;
+}
+
+string Triangle::getType()
+{
+    return "三角形";
+}
+
+main
+
+#include <iostream>
+#include "shap.h"
+#include "circle.h"
+#include "square.h"
+#include "triangle.h"
+#include <cstdlib>
+#include <ctime>
+
+using namespace std;
+
+
+int main()
+{
+    srand(time(0));
+    Shap* shap = NULL;
+    for(int i = 0;i < 10;i++)
+    {
+        switch(rand()%3)
+        {
+        case 0:
+            shap = new Triangle(2,2,2);
+            break;
+        case 1:
+            shap = new Circle(2);
+            break;
+        case 2:
+            shap = new Square(2);
+            break;
+        }
+        cout<<shap->getType()<<endl;
+        cout<<shap->getPerimeter()<<endl;
+        delete shap;
+    }
+    
+	return 0;
+}
+
+
+/*********************************************************
+				day8
+
+**********************************************************/
+
+
+//练习：做两个数的除法，函数返回值返回结果
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+template<typename T>
+T div(T a, T b)
+{
+    return a/b;
+}
+
+int main()
+{
+    cout<<div<int>(10,4)<<endl;
+    cout<<div<float>(10,4)<<endl;
+    return 0;
+}
+
+
+
+
+练习：增删改查
+1.定义链表类Link
+2.私有内部结构体Node{T data, Node* pNext, Node* pFront}
+3.私有成员指针pHead  pTail
+4.公有函数add(T data)向尾部添加元素
+5.公有函数重载[] 返回 指定位置的数据,并可以通过[]修改对应位置的数据
+6.公有函数erase(index)删除index位置的元素
+7.公有函数erase(int start, T data)从start位置开始查找删除链表中data的元素
+8.公有函数size()返回链表的长度
+
+#ifndef LINK
+#define LINK
+
+template<typename T>
+class Link
+{
+private:
+    struct Node
+    {
+        Node()
+        {}
+        Node(T data):
+            data(data),
+            pNext(NULL),
+            pFront(NULL)
+        {}
+        T data;
+        Node* pNext;
+        Node* pFront;
+    };
+public:
+    Link():mSize(0)
+    {
+        Node* pNode = new Node();
+        pHead = pNode;
+        pTail = pNode;
+    }
+    
+    Link& add(T data)
+    {
+        Node* pNode = new Node(data);
+        pTail->pNext = pNode;
+        pNode->pFront = pTail;
+        pTail = pNode;
+        mSize++;
+        return *this;
+    }
+    
+    int size()
+    {
+        return mSize;
+    }
+    
+    T& operator[](int index)
+    {
+        Node* pNode = find(index);
+        return pNode->data;
+    }
+    
+    Link& erase(int index)
+    {
+         Node* pNode = find(index);
+         deleteNode(pNode);
+         return *this;
+    }
+    
+    Link& erase(int start, const T& data)
+    {
+        Node* pNode = find(start);
+        for(int i = start;i < mSize;i++)
+        {
+            if(pNode->data == data)//这样使用模板是不科学的
+            {
+                deleteNode(pNode);
+                mSize--;
+                break;
+            }
+            pNode = pNode->pNext;
+        }
+        return *this;
+    }
+private:
+    Node* find(int index)
+    {
+        Node* pNode = pHead->pNext;
+        for(int i = 0;i < index;i++)
+        {
+            pNode = pNode->pNext;
+        }
+        return pNode;
+    }
+    void deleteNode(Node* pNode)
+    {
+        if(pNode == pTail)
+        {
+            pTail = pTail->pFront;
+            pTail->pNext = NULL;
+            delete pNode;
+        }
+        else
+        {
+            pNode->pFront->pNext = pNode->pNext;
+            pNode->pNext->pFront = pNode->pFront;
+            delete pNode;
+        }
+    }
+private:
+    Node* pHead;
+    Node* pTail;
+    int mSize;
+};
+
+#endif // LINK
+
+
+
+
+
+/*********************************************************
+				day9
+
+**********************************************************/
+
+练习：定义结构体Node，成员变量 int num;char name;
+					2)构造函数，给变量初始化
+					3）成员函数 show（）；输出num和name
+					
+		定义容器vector为Node类型，循环插入数据，num为循环变量i的值，name为字母a~z
+		查找数据中有没有Node(30,'e')，有就删除
+		迭代器遍历，输出所有数据
+
+
+
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+struct Node
+{
+    int num;
+    char name;
+    Node(int num, char name):num(num),name(name)
+    {}
+    
+    bool operator==(const Node& other)
+    {
+        if(num == other.num && name == other.name)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    
+    void show()
+    {
+        cout<<num<<" "<<name<<endl;
+    }
+};
+
+int main()
+{   
+    vector<Node> v;
+    for(int i = 0;i < 10;i++)
+    {
+        v.push_back(Node(i,'a'+i));
+    }
+    
+    vector<Node>::iterator iter = find(v.begin(), v.end(), Node(30,'e'));
+    
+    if(iter != v.end())//没有找到返回end()
+        v.erase(iter);
+    
+    for(vector<Node>::iterator iter = v.begin();iter != v.end();iter++)
+    {
+        iter->show();
+    }
+    
+    return 0;
+}
+
+
+
+2.6 自定义链表类中添加迭代器遍历
+#ifndef LINK
+#define LINK
+
+template<typename T>
+class Link
+{
+private:
+    struct Node
+    {
+        Node()
+        {}
+        Node(T data):
+            data(data),
+            pNext(NULL),
+            pFront(NULL)
+        {}
+        T data;
+        Node* pNext;
+        Node* pFront;
+    };
+public:
+    class iterator
+    {
+    friend class Link;
+    private:
+        Node* pNode;
+    public:  
+        bool operator!=(const iterator& other)
+        {
+            return pNode != other.pNode;
+        }
+        void operator++(int a)
+        {
+            pNode = pNode->pNext;
+        }
+        T* operator->()
+        {
+            return &(pNode->data);
+        }
+        T& operator*()
+        {
+            return pNode->data;
+        }
+    };
+    iterator begin()
+    {
+        iterator i;
+        i.pNode = pHead->pNext;
+        return i;
+    }
+    
+    iterator end()
+    {
+        iterator i;
+        i.pNode = NULL;
+        return i;
+    }
+    Link():mSize(0)
+    {
+        Node* pNode = new Node();
+        pHead = pNode;
+        pTail = pNode;
+    }
+    
+    Link& add(T data)
+    {
+        Node* pNode = new Node(data);
+		pNode->data = data;
+        pTail->pNext = pNode;
+        pNode->pFront = pTail;
+        pTail = pNode;
+        mSize++;
+        return *this;
+    }
+    
+    int size()
+    {
+        return mSize;
+    }
+    
+    T& operator[](int index)
+    {
+        Node* pNode = find(index);
+        return pNode->data;
+    }
+    
+    Link& erase(int index)
+    {
+         Node* pNode = find(index);
+         deleteNode(pNode);
+         return *this;
+    }
+    
+    Link& erase(int start, const T& data)
+    {
+        Node* pNode = find(start);
+        for(int i = start;i < mSize;i++)
+        {
+            if(pNode->data == data)//这样使用模板是不科学的
+            {
+                deleteNode(pNode);
+                mSize--;
+                break;
+            }
+            pNode = pNode->pNext;
+        }
+        return *this;
+    }
+private:
+    Node* find(int index)
+    {
+        Node* pNode = pHead->pNext;
+        for(int i = 0;i < index;i++)
+        {
+            pNode = pNode->pNext;
+        }
+        return pNode;
+    }
+    void deleteNode(Node* pNode)
+    {
+        if(pNode == pTail)
+        {
+            pTail = pTail->pFront;
+            pTail->pNext = NULL;
+            delete pNode;
+        }
+        else
+        {
+            pNode->pFront->pNext = pNode->pNext;
+            pNode->pNext->pFront = pNode->pFront;
+            delete pNode;
+        }
+    }
+private:
+    Node* pHead;
+    Node* pTail;
+    int mSize;
+};
+
+#endif // LINK
+
+综合练习：21点
+1、使用单例模式管理扑克属性数据 PokerManager
+	1.私有成员vector保存花色
+	2.私有成员vector保存点数
+	3.私有成员map保存分值
+	4.定义相应的get函数
+	5.构造函数中对成员赋值
+2、定义扑克结构体Poker 私有属性 花色（红桃等）、点数（A 2 3 J Q等）、分值（21点每个点数的分值）
+	1.构造函数传入花色和点数（大王  大：花色  王：点数）
+	2.构造函数中根据点数自动分配分值属性，可将14种点数以键（点数）值（分值）对形式存放到map中
+3、定义裁判类Judge
+	1.私有成员有stack容器适配器存放随机顺序的54张牌
+	2.构造函数中向stack添加54张随机顺序的牌
+	3.公有函数deal()发牌，每调用一次从stack中pop发出一张牌
+		
+4、定义玩家类Player
+	1.私有成员vector容器存放手中的牌
+	2.私有成员name
+	3.公有函数计算当前手牌总分值
+	4.公有函数显示手中的牌
+	5.公有函数addPoker()传入一个Poker对象存入vector容器中
+5、主逻辑类Logic
+	1.私有成员Judge对象
+	2.私有成员vector存放Player对象
+	3.构造函数中向私有成员vector添加Player对象
+	4.公有函数run()负责游戏主要逻辑while(1)
+	4.1 询问每个玩家是否要牌，放弃要牌则失去以后询问机会
+	4.2 Judeg对象deal()一个牌给要牌的玩家addPoker()
+	4.3 校验要牌玩家的分值是否超过21点，超过则提前出局，失去以后询问机会
+	4.4 显示所有玩家手牌
+	4.5	如果没有可询问对象，则停止游戏
+	4.6 循环回4.1
+
+
+
+
+
+
+
+

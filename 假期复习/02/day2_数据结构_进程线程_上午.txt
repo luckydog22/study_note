@@ -1,0 +1,205 @@
+一、数据结构复习
+知识点复习:
+线性表(顺序表、链表、堆、栈): 每个节点(除了首和尾)，都有一个前驱，一个后继
+树形结构(二叉树)
+图形结构
+排序(冒泡排序、快速排序、交换排序)
+查找(顺序查找、二分法查找、分块查找、哈希查找)
+	哈希查找---> 二分法查找 ---> 分块查找 ---> 顺序查找
+[链表]
+1) 写出单链表结构体定义
+	typedef struct node_t		//node_t可不可以省略?
+	{
+		int data;
+		struct node_t *next;
+	}link_node_t;
+	
+2) 写出双向链表结构体定义
+	typedef struct node_t		//node_t可不可以省略?
+	{
+		int data;
+		struct node_t *prev;	//指向前一个节点
+		struct node_t *next;	//指向后一个节点
+	}link_node_t;
+
+3) 写出单向链表插入、删除节点(单向链表的逆序、两个有序单向链表合并)
+//4 插入元素
+int InsertLinklist(link_node_t *p, int pos, int x)
+{
+	int i;
+	link_node_t *q;
+	if(pos > LengthLinklist(p) + 1 || pos < 1)
+		return -1;
+	for(i = 0; i < pos - 1; i++)
+	{
+		p = p->next;
+	}	
+	q = malloc(sizeof(link_node_t));
+	q->data = x;
+	q->next = p->next;
+	p->next = q;
+	return 0;
+}
+//5 删除元素
+int DeleteLinklist(link_node_t *p, int pos)
+{
+	int i;
+	link_node_t *q;
+	if(pos > LengthLinklist(p) + 1 || pos < 1)
+		return -1;
+	for(i = 0; i < pos - 1; i++)
+	{
+		p = p->next;
+	}
+	q = p->next;
+	p->next = q->next;
+	free(q);
+	return 0;
+}
+ 
+[树形结构]  每个节点(都有一个前驱，多个后继)
+1) 一棵二叉树有8个度为2的节点，5个度为1的节点，那么度为0的节点个数为? (  D  )  (网易)
+ A 不确定   B 7    C 8    D 9    E 6
+
+解题方法:
+二叉树: 度为0的节点的个数是度为2个节点个数+1
+
+2) 深度为8的二叉树，其最多有( 255  ) 个节点，第8层最多有(128)个节点
+
+解题方法:
+二叉树节点个数最多有(2的8次方-1)   2的8次方---->256 - 1----> 255
+第k层最多有(2的k-1次方个节点)
+
+树的遍历:  前序遍历(根左右)、中序遍历(左根右)、后序遍历(左右根)
+3)  参见PPT, 一颗二叉树，给出(前序、中序、后序遍历结果)   
+
+4)	已知遍历结果如下，试画出对应的二叉树
+
+前序： A B C E H F I J D G K
+中序： A H E C I F J B D K G
+问题1：有没有左子树  (没有)
+                   A
+                                B
+                      C             D
+                    E      F           G
+                  H      I   J       K
+
+[排序]
+1) 一组记录的关键码为(46, 79, 56, 38, 40, 84), 利用快速排序的方法，
+            以第一个记录为基准得到的一次划分结果为(  C   )
+A  (38, 40, 46, 56, 79, 84)   B (40, 38, 46, 79, 56, 84)
+C  (40, 38, 46, 56, 79, 84)   D (40, 38, 46, 84, 56, 79)
+
+快速排序: 每一轮结束之后(以第一个为基准，左面的都比其小，右面的都比其大)，
+	为什么快(插空的方式)
+ 46
+ 40 38                79 84
+ 
+
+作业：
+1. 二叉树的后续遍历  CEDBGFA，中序遍历为CBEDAFG，则前序遍历为(       )
+
+
+day1下午答案：
+1. 一个字符串中可能包含a-z中的多个字符，字符也可能重复，
+例如char a[] = "dfafdafdafdafadfdafjkadfdafdafiofidafefadfa";
+写一个程序，对于给定一个这样的字符串，求出字符串中出现次数最多的那个字母以及出现的次数
+（若次数最多的字母有多个，则全部求出）。
+#include <stdio.h>
+int main()
+{
+	int b[26] = { 0 };		//b[0] --> a的个数  ......
+	char a[] = "dfafdafdafdafadfdafjkadfdafdafiofidafefadfa";
+	int i = 0, max = 0;
+	while(a[i] != '\0')	//循环执行完，每个字母的个数被放到b中
+	{
+		b[a[i] - 'a']++;
+		i++;
+	}
+	for(i = 0; i < 26; i++)
+	{
+		if(b[i] > max)
+		{
+			max = b[i];
+		}
+	}
+	for(i = 0; i < 26; i++)
+	{
+		if(b[i] == max)
+			printf("%c  %d\n", i + 'a', b[i]);
+	}
+}
+2.求一个txt文件的行数
+#include <stdio.h>
+int main()
+{
+	char buf[10];	
+	FILE *fp = fopen("hello.c", "r");
+	if(fp != NULL)
+	{
+		int c = 0;
+		while(fgets(buf, 10, fp) != NULL) //fgets 如果1行多于10个字符，那么读一次最多  9  字符，字符串必须有'\0'
+		{
+			//有漏洞
+			int a = strlen(buf);
+			if(buf[a - 1] == '\n')
+				c++;
+		}
+		printf("line is %d\n", c);
+	}
+}
+3.用标准c文件I/O实现文件 copy，如：./mycp a.c b.c
+                       将a.c 内容copy到b.c中去
+#include <stdio.h>
+int main(int argc, char *argv[])
+{
+	char buf[50] = { 0 };		// 0---> '\0'     0  NULL
+	if(argc < 3)
+	{
+		printf("param error\n");
+		printf("like this ./a.out a.c b.c");
+		return -1;
+	}	
+	FILE *fp = fopen(argv[1], "r");
+	int len;
+	if(fp != NULL)
+	{
+		FILE *fpw = fopen(argv[2], "w");
+		while((len = fread(buf, sizeof(char), sizeof(buf), fp)) > 0)
+		{
+			fwrite(buf, sizeof(char), len, fpw);
+			
+		}	
+		fclose(fp);
+		fclose(fpw);
+	}
+}
+4:
+  打开一个文件，文件不存在就创建，文件存在，读出文件内容，输出到显示器上 
+  要求: 文件名从参数中读出   ./a.out  a.c
+#include <stdio.h>
+int main(int argc, char *argv[])
+{
+	if(argc < 2)
+	{
+		printf("param error: like this ./hello a.c\n");
+		return -1;
+	}
+	FILE *fp = fopen(argv[1], "r");
+	if(fp != NULL)
+	{
+		char a = fgetc(fp);
+		while(a != EOF)  //EOF表示读失败
+		{
+			printf("%c", a);
+			a = fgetc(fp);
+		}
+	}
+	else
+	{
+		fp = fopen(argv[1], "w");
+	}	
+	fclose(fp);
+}
+
+

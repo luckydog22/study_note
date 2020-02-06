@@ -1,0 +1,550 @@
+
+一、 回顾 
+1.传输层协议： udp   tcp    
+	UDP : 发送端：socket  toaddr  sendto     close  
+		  接收端：socket  bind    recvfrom   close 
+	TCP : 服务端：socket  bind  listen accept recv/send close 
+		  客户端：socket  connect recv/send close 
+
+2.复习tcp函数 
+int n = listen(listenfd, 5);
+int connfd = accept(listenfd, &toaddr, &len);
+int x = connect(sockfd, &server_addr, len);
+
+
+
+
+新课  
+	
+二、 服务器模型  
+
+1.循环服务器 
+udp : 
+int main()
+{
+	socket(); 
+	bind(); 	
+	while(1)
+	{
+		recvfrom(sockfd, &msg, sizeof(msg),0, (struct sockaddr *)&youaddr,len);
+	}
+}
+
+tcp ： 
+int main()
+{
+	socket(); 
+	bind();
+	listen(); 
+	while(1)
+	{
+		int connfd = accept();
+		while(1)
+			recv(connfd, ... );	
+	}
+}
+情形1:  如果客户1请求连接， 没有发送数据，那么，客户2能否连接的上 ？
+情形2:  如果不使用数据接收函数，那么客户1连接，然后客户2连接，这两个客户端如何与服务器交流信息 ？
+为了改进以上情形的不足，可以使用如下方式： 
+
+
+2.并发服务器  
+2.1多线程实现： 
+void *fun(void *p)
+{
+	int connfd = *(int *)p;
+	....;
+}
+int main()
+{
+	socket(); 
+	bind();
+	listen(); 
+	while(1)
+	{
+		int connfd = accept();
+		pthread_create(&id,NULL,fun, &connfd);    // 注意 参数 4 ！！！
+	}
+}
+
+2.2多进程实现： 
+int main()
+{
+	socket(); 
+	bind();
+	listen(); 
+	while(1)
+	{
+		int connfd = accept();
+		pid_t id = fork();
+		if(id < 0){
+			perror();
+		}
+		else if(id == 0)    // 子进程实现 具体的客户端请求
+		{
+			while(1)
+			{
+				recv(connfd);
+				send(connfd);
+			}
+		}
+		else   // 父进程用来 不断建立新的连接请求。 
+		{
+			close(connfd);
+		}
+	}
+}
+
+示例： （ 多线程、并发 ）
+///// server.c ///////
+#include <stdio.h>
+#include <strings.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <pthread.h>
+// 真正处理客户请求的线程。 
+void *handler_fun(void *p)
+{
+	int connfd = *(int *)p;    // 连接套接字一定要传过来。 
+	char buf[128];
+	while(1)
+	{
+		bzero(buf,sizeof(buf));
+		int n = recv(connfd, buf, sizeof(buf), 0);   // recv 的返回值有三种： n>0 说明收到了数据。 n<0 说明接收出现错误。 n=0 说明客户端下线了。 
+		if(n <= 0)              // 所以通过判定n 是否 等于 0， 可以判定是否有客户端下线。如果客户下线， 及时结束掉当前线程即可。 
+			break;
+		send(connfd, "Hello client~", 13, 0);     
+	}
+}
+// 多线程实现同时处理多个请求。 
+int main()
+{
+	int listenfd = socket(AF_INET, SOCK_STREAM, 0);   // 1. 创建 socket 
+	if(listenfd < 0)
+	{
+		perror("socket");
+		return -1;
+	}
+
+	struct sockaddr_in myaddr,youaddr;
+	myaddr.sin_family = AF_INET; 
+	myaddr.sin_port = htons(9999);
+	myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	int len = sizeof(struct sockaddr );
+
+	if(bind(listenfd, (struct sockaddr *)&myaddr, len)  < 0)     // 2. 绑定（套接字 和 自己的 网络地址结构 建立关联） 
+	{
+		perror("bind");
+		return -1;
+	}
+
+	listen(listenfd, 10);     // 建立监听。
+	while(1)
+	{
+		int connfd = accept(listenfd, (struct sockaddr *)&youaddr, &len);       // 等待客户端连接。 
+		if(connfd < 0)
+		{
+			perror("accept");
+			return -1;
+		}
+		pthread_t id;
+		pthread_create(&id,NULL, handler_fun, (void *)&connfd);   // 如果连接成功，则将新的描述符传递给线程，实现两端的通信。 
+	}
+}
+
+
+///// client.c //////
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <strings.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <pthread.h>
+int main(int argc,char *argv[])
+{
+	if(argc < 2)
+	{
+		printf("%s my-port \n",argv[0]);
+		return -1;
+	}
+	int sockfd = socket(AF_INET, SOCK_STREAM, 0);   // 1. 创建套接字描述符。 
+	if(sockfd < 0)
+	{
+		perror("socket");
+		return -1;
+	}
+
+	struct sockaddr_in myaddr,ser_addr;
+	myaddr.sin_family = AF_INET; 
+	myaddr.sin_port = htons(atoi(argv[1]));
+	myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	int len = sizeof(struct sockaddr );
+
+	if(bind(sockfd, (struct sockaddr *)&myaddr, len)  < 0)    // 2. 绑定
+	{
+		perror("bind");
+		return -1;
+	}
+	
+	ser_addr.sin_family = AF_INET; 
+	ser_addr.sin_port = htons(9999);
+	ser_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	if(connect(sockfd, (struct sockaddr *)&ser_addr, len) < 0)    // 主动发起连接请求。 
+	{
+		perror("connect");
+		return -1;
+	}
+
+	char buf[128] = {0};
+	while(1)
+	{
+		fgets(buf, sizeof(buf), stdin);
+		if( !strncmp(buf,"Byebye",6) )
+			break;
+		send(sockfd, buf, sizeof(buf), 0);     // 发送数据。 
+		bzero(buf, sizeof(buf));
+		recv(sockfd, buf, sizeof(buf), 0);     // 接收消息。 
+		printf("buf: %s\n",buf);
+	}
+	close(sockfd);
+	return 0;
+}
+
+// 练习： 编写 tcp 服务器。 实现的功能是： 客户端发来请求（文件名）。 请服务器，返回文件的内容。 
+///////////// server.c ///////////
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <strings.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <pthread.h>
+// 线程处理函数  
+void *handler_fun(void *p)
+{
+	int connfd = *(int *)p;
+	char buf[128];
+	while(1)
+	{
+		bzero(buf,sizeof(buf));
+		int n = recv(connfd, buf, sizeof(buf), 0);      // 1. 收文件名称。 
+		if(n <= 0)
+			break;
+		int fd = open(buf,O_RDONLY);      // 打开该文件  
+		printf("file : %s\n",buf);
+		if(fd < 0)
+		{
+			bzero(buf,sizeof(buf));
+			strcpy(buf,strerror(errno));
+			send(connfd, buf, sizeof(buf), 0);    // 如果文件不存在，则返回出错原因给客户端。 
+			continue;
+		}
+		while( (n=read(fd,buf,sizeof(buf)-1)) > 0 )    // 如果读取成功，则将文件内容发送给客户端。 
+		{
+			int x = send(connfd, buf, n, 0);
+			if(x <= 0)     //如果发送的返回值小于等于0，证明发送完毕。 
+			{
+				close(fd);
+				continue;
+			}
+		}
+	}
+}
+int main()
+{
+	int listenfd = socket(AF_INET, SOCK_STREAM, 0); 
+	if(listenfd < 0)
+	{
+		perror("socket");
+		return -1;
+	}
+
+	struct sockaddr_in myaddr,youaddr;
+	myaddr.sin_family = AF_INET; 
+	myaddr.sin_port = htons(9999);
+	myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	int len = sizeof(struct sockaddr );
+
+	if(bind(listenfd, (struct sockaddr *)&myaddr, len)  < 0)
+	{
+		perror("bind");
+		return -1;
+	}
+
+	listen(listenfd, 10);
+	while(1)
+	{
+		int connfd = accept(listenfd, (struct sockaddr *)&youaddr, &len); 
+		if(connfd < 0)
+		{
+			perror("accept");
+			return -1;
+		}
+		pthread_t id;
+		pthread_create(&id,NULL, handler_fun, (void *)&connfd);     // 多线程实现并发没有变。 
+	}
+}
+
+//////////// client.c ///////////
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <strings.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <pthread.h>
+int main(int argc,char *argv[])
+{
+	if(argc < 2)
+	{
+		printf("%s my-port \n",argv[0]);
+		return -1;
+	}
+	int sockfd = socket(AF_INET, SOCK_STREAM, 0); 
+	if(sockfd < 0)
+	{
+		perror("socket");
+		return -1;
+	}
+
+	struct sockaddr_in myaddr,ser_addr;
+	myaddr.sin_family = AF_INET; 
+	myaddr.sin_port = htons(atoi(argv[1]));
+	myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	int len = sizeof(struct sockaddr );
+
+	if(bind(sockfd, (struct sockaddr *)&myaddr, len)  < 0)
+	{
+		perror("bind");
+		return -1;
+	}
+	
+	ser_addr.sin_family = AF_INET; 
+	ser_addr.sin_port = htons(9999);
+	ser_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	if(connect(sockfd, (struct sockaddr *)&ser_addr, len) < 0)     // 主动发起连接请求。 
+	{
+		perror("connect");
+		return -1;
+	}
+
+	char buf[128] = {0};
+	while(1)
+	{
+		fgets(buf, sizeof(buf), stdin);      // 输入文件名   
+		if( !strncmp(buf,"Byebye",6) )  // 只有输入 “Byebye” 时，客户端才退出。 
+			break;
+		send(sockfd, buf, strlen(buf)-1, 0);    // 发送文件名。 
+		
+		int n;
+		do 
+		{
+			bzero(buf, sizeof(buf));
+			n = recv(sockfd, buf, sizeof(buf)-1, 0);    // 接收文件内容。 
+			printf("%s",buf);
+			fflush(stdout);
+		}while( n >= sizeof(buf)-1);  // 判定是否接收完毕。 
+	}
+	close(sockfd);
+	return 0;
+}
+执行过程   ： 
+gcc server.c -o server -lpthread  
+gcc client.c -o client 
+./server 
+./client  12345 
+./client  8888
+
+
+3. IO多路复用  
+
+I/O 模型： 4种： 
+(1) 阻塞I/O           ----------  最简单、效率最低
+阻塞函数：
+	读操作中的： read  recv  recvfrom  
+	写操作中的： write  send  
+	其他操作：   accept  connect 
+
+(2) 非阻塞I/O         ----------  需要轮询
+实现非阻塞的函数：    int fcntl(int fd, int cmd, long arg);  // 可以通过设置其标志位，来实现非阻塞。 
+[示例]
+      int flag；
+      flag = fcntl(sockfd, F_GETFL, 0);
+      flag |= O_NONBLOCK;
+      fcntl(sockfd, F_SETFL, flag);
+
+(3) 信号驱动I/O       ----------  一种异步通信模型  
+略
+	  
+(4) 多路复用I/O       ----------  允许同时对多个I/O 进行控制  
+I/O多路复用。其基本思想是：
+先构造一张有关描述符的表，然后调用一个函数。当这些文件描述符中的一个或多个已准备好进行I/O时函数才返回。
+函数返回时告诉进程那个描述符已就绪，可以进行I/O操作。
+
+*函数原型： int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
+参数：     参数1： 所有监控的描述符中最大的那个 +1 .
+		   参数2： 所有要读的文件描述符的集合。
+		   参数3：   ... 写   ...        
+		   参数4：   ... 其他 ...
+		   参数5： 超时设置. 
+					NULL       ：一直阻塞，直到有文件描述符就绪或出错
+					时间值为0  ：仅仅检测文件描述符集的状态，然后立即返回
+					时间值不为0：在指定时间内，如果没有事件发生，则超时返回
+
+设置描述符集需要的宏： 
+       void FD_CLR(int fd, fd_set *set);
+       int  FD_ISSET(int fd, fd_set *set);
+       void FD_SET(int fd, fd_set *set);
+       void FD_ZERO(fd_set *set);
+	   
+[示例]
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/select.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#define  N  64
+typedef struct sockaddr  SA;
+int  main(int argc,  char *argv[])
+{
+	int i, listenfd, connfd, maxfd;
+	char buf[N];
+	fd_set  rdfs;
+	struct sockaddr_in myaddr;
+
+	if((listenfd = socket(PF_INET, SOCK_STREAM, 0)) < 0)
+	{
+		perror("fail to socket");
+		exit(-1);
+	}
+
+	bzero(&myaddr, sizeof(myaddr));
+	myaddr.sin_family = AF_INET;
+	myaddr.sin_port = htons(8888);
+	myaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+	if(bind(listenfd, (SA *)&myaddr, sizeof(myaddr)) < 0)
+	{
+		perror("fail to bind");
+		exit(-1);
+	}
+
+	listen(listenfd, 5);
+	maxfd = listenfd;
+
+	while ( 1 )
+	{
+		FD_ZERO(&rdfs);
+		FD_SET(0, &rdfs);
+		FD_SET(listenfd, &rdfs);
+
+		if (select(maxfd+1, &rdfs, NULL, NULL, NULL) < 0)
+		{
+			perror("fail to select");
+			exit(-1);
+		}
+
+		for(i=0; i<=maxfd; i++)
+		{
+			if (FD_ISSET(i, &rdfs))
+			{
+				if (i == STDIN_FILENO)
+				{
+					fgets(buf, N, stdin);
+					printf("%s", buf);
+				}
+				else if (i == listenfd)
+				{
+					connfd = accept(listenfd, NULL, NULL);
+					printf("New Connection connfd is coming\n");
+					close(connfd);
+				}
+			} 
+		}  //  end for
+	} // end while
+	return 0;
+}   
+
+I/O多路复用 的优势与局限： 
+优势： 
+I/O多路复用模型可以解决资源限制的问题。此模型实际上是将UDP循环模型用在了TCP上面。
+服务器使用单进程循环处理请求（客户端有限的情况下）。
+局限：
+存在同样的问题：由于服务器是依次处理客户的请求，所以可能会导致有的客户等待时间过长。
+
+
+
+
+二、 网络超时检测
+1. 套接字常用选项及说明 
+协议层            选项名称           说明        数据类型 
+SOL_SOCKET:   
+			   SO_BROADCAST     允许发送广播       int   
+			   SO_DEBUG          允许调试          int  
+			   SO_RCVBUF      接收缓冲区的大小     int  
+			   SO_SNDBUF      发送缓冲区的大小     int   
+			   SO_RCVTIMEO        接收超时      struct timeval   
+			   SO_SNDTIMEO        发送超时      struct timeval   
+			   SO_TYPE          获得套接字类型     int   
+IPPROTO_IP:  
+			   IP_OPTINOS      IP 首部选项         int  
+			   IP_TTL           生存时间           int  
+IPPROTO_TCP: 
+			   TCP_MAXSEG     tcp 最大数据段大小   int   
+			   
+2.  getsockopt  获取套接字选项。 
+函数原型：  int getsockopt(int sockfd, int level, int optname, void *optval, socklen_t *optlen);
+参数：       参数1： 套接字描述符。 
+			 参数2： 选项所属协议层。
+			 参数3： 选项名称。 
+			 参数4： 保存选项值的缓冲区。
+			 参数5： 选项值的长度。  
+返回值： 成功： 0 
+		 失败： -1 
+[示例]  int a; 
+		int len = sizeof(int);
+		int n = getsockopt(sockfd, SOL_SOCKET, SO_BROADCAST,&a,&len);		 
+		printf("%d\n",a);
+		
+3.  setsockopt  设置套接字选项。 
+函数原型：  int setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen);
+[示例]
+		int on = 1;
+		setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &on, sizeof(int));
+
+[示例1] 
+struct timeval t = {5,0};
+setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &t, sizeof(struct timeval));
+
+// 练习： 通过函数，获取套接字类型   
+
+
+
+
+//  广播、组播。  sqlite3 .
+
+
+
+
+
+
+
+
+
+
+

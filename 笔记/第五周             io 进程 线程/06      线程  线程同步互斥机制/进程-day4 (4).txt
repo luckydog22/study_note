@@ -1,0 +1,602 @@
+
+一、线程： 
+1. 什么是线程： 线程指的是共享相同地址空间的多任务。   进程！是程序调度和资源分配的最小单位。 
+
+2. 线程特点： 
+1） 进程可以创建线程。 进程结束，线程一定结束。 线程结束，不影响进程的正常运行。 
+2） 不同的线程，完成不同的任务，共同为进程服务。 
+3） 一个进程中的多个线程共享以下资源： 静态数据、进程中打开的文件描述符、信号处理函数、当前工作目录、用户ID、用户组ID
+4） 每个线程私有的资源如下：线程ID (TID) 、	堆栈：局部变量、返回地址、	错误号 (errno)、信号掩码和优先级、执行状态和属性
+5） 使用线程时，需要加载第三方库。        Compile and link with -pthread.
+6） 进程是程序运行和系统资源分配的最小单位，包括任务结构和虚拟映射地址空间。线程只有任务结构。
+
+3. 线程的同步互斥机制： 信号量、互斥锁、条件变量。  
+
+4. 线程的基本操作： 
+1) 创建线程。  pthread_create
+头文件：    #include <pthread.h>
+函数原型：  int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
+参数：    参数1： 线程id . 
+		  参数2： 线程属性。 
+		  参数3： 线程函数。
+		  参数4： 给线程函数传递的参数。 
+返回： 成功：0    失败：错误码 		  
+ 
+2) 线程退出： pthread_exit 
+函数原型：  void pthread_exit(void *retval);
+参数：      线程结束时的返回值。 可通过 pthread_join 函数来接收。 
+
+3) 线程等待： pthread_join 
+函数原型： int pthread_join(pthread_t thread, void **thread_result);
+参数：  参数1： 线程ID
+		参数2： 用户定义的指针，用来接收被等待线程结束时的返回值（不为NULL时）
+返回值： 成功：0   失败：错误码
+ 
+示例： 
+/////////////////////
+#include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>
+void *thread_fun()        // 线程执行函数。 
+{
+	while(1)
+	{
+		printf("I'm thread~\n");
+		sleep(1);
+	}
+}
+int main()
+{
+	pthread_t id;
+	pthread_create(&id, NULL, thread_fun, NULL);  // 创建线程。 开启多任务。
+	while(1);
+}
+编译运行：  
+gcc a.c -lpthread 
+./a.out 
+
+//练习:熟悉pthread_create函数，然后创建两个线程，交替打印(1 is running)(2 is running)
+#include <stdio.h>
+#include <unistd.h>
+#include <pthread.h>
+void *fun(void *p)
+{
+	int i = *(int *)p;
+	while(1)
+	{
+		printf(" I'm thread~ %d\n",i);
+		sleep(1);
+	}
+	pthread_exit(0);
+}
+int main()
+{
+	int a = 1,b = 2;
+	pthread_t id1,id2;
+	pthread_create(&id1,NU  LL,fun,&a);
+	pthread_create(&id2,NULL,fun,&b);
+	pthread_join(id1,NULL);
+	return 0;
+}
+
+//练习：创建一个线程，主程序给线程传递一个结构体student，student结构体有两个成员: 姓名,年龄，线程不断打印student的值。
+#include <stdio.h>
+#include <unistd.h>
+#include <pthread.h>
+typedef struct 
+{
+	char name[100];
+	int age;
+}student_t ;
+
+void *fun(void *p)
+{
+	student_t *x = (student_t *)p;
+	while(1)
+	{
+		printf("%s %d\n",x->name, x->age);
+		sleep(1);
+	}
+	pthread_exit(0);
+}
+int main()
+{
+	pthread_t id;
+	student_t s = {"xiaoming",22};
+	pthread_create(&id,NULL,fun,(void *)&s);
+	pthread_join(id,NULL);
+	return 0;
+}
+
+
+二  线程的同步互斥机制：      互斥锁/ 信号量/ 条件变量  
+
+1. 同步与互斥问题：
+同步：多个任务(线程)按照约定的顺序相互配合完成一件事情。
+互斥：引入互斥锁 的目的是用来保证 共享数据操作的完整性。
+
+2. 如果不使用同步互斥机制，那么多个线程共享一个资源时，会产生混乱，导致资源利用不合理。 如下清醒即是： 
+示例代码：
+#include <stdio.h>
+#include <unistd.h>
+#include <pthread.h>
+int a[20];
+
+void *fun1(void *p);
+void *fun2(void *p);
+int main()
+{
+	pthread_t id1,id2;
+	pthread_create(&id2,NULL,fun2,NULL);
+	pthread_create(&id1,NULL,fun1,NULL);
+	pthread_join(id1,NULL);
+	pthread_join(id2,NULL);
+	return 0;
+}
+void *fun2(void *p)
+{
+	int i; 
+	for(i=0; i<20; i++)
+	{
+		a[i] = 77;
+		usleep(200000);
+	}
+	for(i=0; i<20; i++)
+		printf("%d - ",a[i]);
+	printf("\n");
+}
+void *fun1(void *p)
+{
+	int i;
+	for(i=0; i<20; i++)
+	{
+		a[i] = 10*i;
+		usleep(100000);
+	}
+	for(i=0; i<20; i++)
+		printf("%d . ",a[i]);
+	printf("\n");
+}
+编译及结果： 
+~$  gcc wait.c -lpthread 
+~$  ./a.out
+77 . 77 . 77 . 77 . 77 . 77 . 77 . 77 . 77 . 77 . 77 . 110 . 120 . 130 . 140 . 150 . 160 . 170 . 180 . 190 . 
+77 - 77 - 77 - 77 - 77 - 77 - 77 - 77 - 77 - 77 - 77 - 77 - 77 - 77 - 77 - 77 - 77 - 77 - 77 - 77 - 
+
+
+3. 互斥锁 
+初始化：   pthread_mutex_init(pthread_mutex_t *mutex,pthread_mutexattr_t *attr);
+上锁  ：   pthread_mutex_lock(pthread_mutex_t *mutex);
+解锁  ：   pthread_mutex_unlock(pthread_mutex_t *mutex);
+
+示例代码： 
+#include <stdio.h>
+#include <unistd.h>
+#include <pthread.h>
+int a[10];                // 临界资源。 
+pthread_mutex_t mutex;
+// 线程1： 将数据存放 10 个 77 
+void *fun1(void *p)
+{
+	pthread_mutex_lock(&mutex);    // 上锁  
+	int i; 
+	for(i=0; i<10; i++)
+	{
+		a[i] = 77;
+		sleep(1);
+	}
+	for(i=0; i<10; i++)
+		printf("%d - ",a[i]);
+	printf("\n");
+	pthread_mutex_unlock(&mutex);   // 解锁。 
+}
+// 线程 2 
+void *fun2(void *p)
+{
+	pthread_mutex_lock(&mutex);
+	int i;
+	for(i=0; i<10; i++)
+	{
+		a[i] = 10*i;
+		sleep(1);
+	}
+	for(i=0; i<10; i++)
+		printf("%d . ",a[i]);
+	printf("\n");
+	pthread_mutex_unlock(&mutex);
+}
+
+int main()
+{
+	pthread_mutex_init(&mutex,NULL);    // 初始化锁。 
+	pthread_t id1,id2;
+	pthread_create(&id2,NULL,fun2,NULL);
+	pthread_create(&id1,NULL,fun1,NULL);
+	pthread_join(id1,NULL);
+	pthread_join(id2,NULL);
+	return 0;
+}
+
+3. 信号量： 
+（1）分类
+内核空间信号量 ： 由内核维护。 
+用户空间信号量 ：system V 信号量、  posix 信号量（有名、无名）  
+
+（2）比较
+	  system V 信号量         	 posix 信号量  
+使用：    进程间         	线程间、亲缘关系的进程间
+	 #include <sys/ipc.h>
+	 #include <sys/sem.h>      #include <semaphore.h>
+		semget                    sem_init
+		semop                     sem_wait 
+		semctl					  sem_post
+
+（3）pv操作
+p 操作： 申请资源的操作 
+if(信号量的值大于0){
+	申请资源的任务继续运行，信号量的值 -1；
+}
+else{
+	申请资源的任务继续阻塞等待。 
+}
+
+v 操作： 释放资源的操作 
+if(没有任务在等待该资源){
+	信号量的值 +1；
+}
+else {
+	唤醒第一个等待资源的任务，让其继续运行。	
+}
+
+（4） 系统调用 
+函数原型：   
+		  sem_t sem; 
+初始化：  int sem_init(sem_t *sem, int pshared, unsigned int value);   // pshared : 0 线程间使用。 非0：进程间使用。
+p 操作：  int sem_wait(sem_t *sem);
+v 操作：  int sem_post(sem_t *sem);
+
+（5）示例： 
+///////////////////////
+#include <stdio.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <semaphore.h>
+int a[10];
+sem_t sem;       // 定义信号量  
+// 线程1： 
+void *fun1(void *p)
+{
+	sem_wait(&sem);      // 申请资源的 p 操作 
+	int i; 
+	for(i=0; i<10; i++)
+	{
+		a[i] = 77;
+		sleep(1);
+	}
+	for(i=0; i<10; i++)
+		printf("%d - ",a[i]);
+	printf("\n");
+	sem_post(&sem);      // 释放资源的 v 操作  
+}
+// 线程2 
+void *fun2(void *p)
+{
+	sem_wait(&sem);
+	int i;
+	for(i=0; i<10; i++)
+	{
+		a[i] = 10*i;
+		sleep(1);
+	}
+	for(i=0; i<10; i++)
+		printf("%d . ",a[i]);
+	printf("\n");
+	sem_post(&sem);
+}
+int main()
+{
+	sem_init(&sem,0,1);
+	pthread_t id1,id2;
+	pthread_create(&id2,NULL,fun2,NULL);
+	pthread_create(&id1,NULL,fun1,NULL);
+	pthread_join(id1,NULL);
+	pthread_join(id2,NULL);
+	return 0;
+}
+
+//练习：实现两个进程聊天（进程间通信）
+1. 进程a和进程b都用多线程即可
+	主线程：发消息  
+	子线程：收消息  
+
+//////////////////////	
+#include <stdio.h>
+#include <strings.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+typedef struct          // 消息结构   
+{
+	long type;
+	char text[128];
+}msg_t;
+int recv_type, send_type;       // 收发类型  
+// 收消息线程  
+void *recv_info(void *p)   
+{
+	int msqid = *(int *)p;      // 传递一个消息队列id 过来。 
+	msg_t msg;
+	while(1)
+	{
+		bzero(&msg,sizeof(msg));
+		msgrcv(msqid,&msg,sizeof(msg)-sizeof(long),recv_type,0);    // 循环收消息即可。 
+		printf("%s\n",msg.text);
+	}
+}
+int main(int argc,char *argv[])
+{
+	if(argc < 3)
+	{
+		printf("%s send_type recv_type\n",argv[0]);
+		return 0;
+	}
+	send_type = atoi(argv[1]);
+	recv_type = atoi(argv[2]);
+
+	key_t key = ftok("/proc",'q');
+	int msqid = msgget(key,IPC_CREAT|0777);    // 创建消息队列。 
+	if(msqid < 0)
+	{
+		perror("msgget");
+		return -1;
+	}
+
+	pthread_t id;
+	pthread_create(&id,NULL, recv_info,(void *)&msqid);    // 创建收消息线程。 
+	
+	msg_t msg;
+	while(1)
+	{
+		bzero(&msg,sizeof(msg));
+		msg.type = send_type;
+		fgets(msg.text,sizeof(msg.text),stdin);         //输入。 
+		msgsnd(msqid,&msg,sizeof(msg)-sizeof(long),0);  // 发送消息即可。 
+	}
+}
+编译运行： 
+gcc chat.c -o chat -lpthread 
+./chat 123   666 
+./chat 666   123 
+
+
+
+
+本周汇总： 进程、 进程间通信   
+
+1. 进程   
+pid_t pid = getpid();
+pid_t pid = getppid(); 
+pid_t pid = fork();     // 创建子进程 
+wait(&a);
+waitpid(pid,NULL,WNOHANG);
+exit(0);
+_exit(0); 
+execl("/bin/ls","ls","-l",NULL); 
+
+2. 守护进程  
+
+3. 进程间通信：  信号、管道、消息队列、共享内存、信号量 
+(1)信号  
+signal(SIGINT,SIG_DFL);
+kill(pid,SIGINT);
+raise(SIGUSR1);
+alarm(5);
+
+(2)管道： 有名、无名   
+无名： 在内核区域中、亲缘关系的进程间、单工通信、固定的读写端、   int x = pipe(fd);
+有名： 管道文件、先入先出、不支持定位操作、无关进程间             mkfifo("myfifo",O_RDWR|0777);
+
+(3)消息队列： 
+key_t key = ftok("/root",'r');
+int msqid = msgget(key,IPC_CREAT|0777);
+msgsnd(msqid,buf,sizeof(buf)-sizeof(long),0);
+msgrcv(msqid,buf,sizeof(buf)-sizeof(long),123,0); 
+msgctl(msqid,IPC_RMID,NULL); 
+
+(4)共享内存： 
+int shmid = shmget(IPC_PRIVATE,1024,IPC_CREAT|0777); 
+int *p = shmat(shmid,NULL,IPC_RDONLY); 
+shmdt(p); 
+shmctl(shmid,IPC_RMID,NULL); 
+
+(5)信号量： 
+semget();  
+semop(); 
+semctl(); 
+
+4. 线程： 一个进程中开启的多任务  
+pthread_create(&id,NULL,fun,NULL); 
+pthread_join(id,NULL);
+pthread_exit(0);
+
+
+
+
+
+三、 作业参考代码：
+1. （信号作业）售票员与司机
+//////////////////
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <signal.h>
+// 售票员 
+void saler(int signum)
+{
+	if(signum == SIGINT)
+		kill(getppid(),SIGUSR1);
+
+	else if(signum == SIGQUIT)
+		kill(getppid(),SIGUSR2);
+
+	else if(signum == SIGTSTP)
+		raise(SIGUSR1);
+
+	else if(signum == SIGUSR1)
+	{
+		printf("get off !\n");
+		exit(0);
+	}
+}
+// 司机
+void driver(int signum)
+{
+	if(signum == SIGUSR1)
+		printf("ready-go!\n");
+
+	else if(signum == SIGUSR2)
+		printf("stop!\n");
+
+}
+
+int  main()
+{
+	pid_t id = fork();
+	if(id < 0)
+	{
+		perror("fork");
+		return -1;
+	}
+	if(id == 0)   // saler
+	{
+		signal(SIGINT,saler);
+		signal(SIGQUIT,saler);
+		signal(SIGTSTP,saler);
+		signal(SIGUSR1,saler);
+		while(1);
+	}
+	else   // driver 
+	{
+		signal(SIGINT,SIG_IGN);
+		signal(SIGQUIT,SIG_IGN);      // 父进程记得屏蔽掉一众信号 。 
+		signal(SIGTSTP,SIG_IGN);
+		signal(SIGUSR1,driver);
+		signal(SIGUSR2,driver);
+		wait(NULL);
+	}
+	return 0;
+}
+
+
+2. 有名管道实现 cat 
+
+//////// mk.c //////
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+int main()
+{
+	int x = mkfifo("./myfifo",O_RDWR|0777);
+	if(x < 0)
+		perror("mkfifo");
+	return 0;
+}
+
+///////// server.c ////////
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+#include <errno.h>
+#include <strings.h>
+int main(int argc,char *argv[])
+{
+	if(argc < 2)
+	{
+		printf("%s fifo-name\n",argv[0]);
+		return -1;
+	}
+	int fd_fifo = open(argv[1],O_RDWR);    //  myfifo 
+	if(fd_fifo < 0)
+	{
+		perror("open fifo");
+		return -1;
+	}
+	char buf[128] = {0};
+	read(fd_fifo,buf,sizeof(buf));   // a.c 
+
+	int fd = open(buf,O_RDONLY);
+	if(fd < 0)
+	{
+		strcpy(buf,strerror(errno));
+		write(fd_fifo, buf,sizeof(buf));
+		return -1;
+	}
+
+	while(1)
+	{
+		bzero(buf,sizeof(buf));
+		int x = read(fd,buf,sizeof(buf)-1);   // fd 
+		write(fd_fifo,buf,x);  // myfifo 
+		if(x < sizeof(buf)-1)
+			break;
+	}
+	close(fd);
+	return 0;
+}
+
+///////////client.c ///////////
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+#include <strings.h>
+
+int main(int argc,char *argv[])
+{
+	if(argc < 3)
+	{
+		printf("%s fifo-name file-name\n",argv[0]);
+		return -1;
+	}
+	int fd = open(argv[1],O_RDWR);    // myfifo
+
+	write(fd,argv[2],strlen(argv[2]));   // a.c 
+
+	sleep(1); 
+	char buf[128] = {0};
+	while(1)
+	{
+		bzero(buf,sizeof(buf));
+		int x  = read(fd,buf,sizeof(buf)-1);  
+		printf("%s",buf);
+		if(x < sizeof(buf)-1)  
+			break; 
+	}
+}
+编译及结果：  
+gcc mk.c -o mk   
+gcc server.c -o server   
+gcc client.c -o client 
+./mk 
+./server myfifo 
+./client myfifo server.c 
+
+
+// 复习： 进程间通信。 
+// 预习： 网络通信。 
+
+
+
+
+
+
+

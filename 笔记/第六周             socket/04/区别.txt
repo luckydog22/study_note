@@ -1,0 +1,30 @@
+以下俩种都是基于数据报套接字的
+1.广播
+send
+sockfd之后修改套接字选项
+int on=1;
+setsockopt(sockfd,SOL_SOCKET,SO_BROADCAST,&,on,sizeof(on));
+init struct发的ip应该是广播地址
+
+receive
+ip 必须和广播地址处于同一网段
+recvfrom 后俩参数不写
+
+2.组播
+send
+组播ip是d类地址，
+发送方注意ip即可
+
+recv
+init struct  和 bind 之前需将自己加入组播地址
+
+struct ip_mreq  mreq;              // 该结构在 <netinet/in.h> 中有定义。 
+bzero(&mreq, sizeof(mreq)); 
+mreq.imr_multiaddr.s_addr = inet_addr("224.10.10.88");    // 多播组地址。 
+mreq.imr_interface.s_addr = htonl(INADDR_ANY);  
+
+if(setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP,&mreq, sizeof(mreq)) < 0)   // 设置加入多播组。 
+{
+	perror("setsockopt");
+	return -1;
+}	

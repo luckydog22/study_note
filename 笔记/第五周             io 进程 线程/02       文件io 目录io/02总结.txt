@@ -1,0 +1,138 @@
+文件io
+
+小知识点：
+1./标准输入：键鼠  标准输出：终端
+
+打开 关闭 读写  定位
+
+普通文件
+1./open
+(1)
+<sys/types.h>
+<sys/stat.h>
+<fcntl.h>
+int fd=open("./a.c",O_CREAT,0775);
+参数3只有在创建的时候才能用得上
+
+(2)
+参数2：
+w    O_CREAT|O_WRONLY|O_TRUNC
+w+   O_CREAT|O_RDWR|O_TRUNC
+r    O_RDONLY
+r+   O_RDWR
+a    O_APPEND|O_CREAT|O_WRONLY
+a+   O_APPEND|O_RDWR|O_CREAT
+
+2./close
+(1)
+<unistd.h>
+close(fd);
+
+
+先文件，后容器
+3./read  write
+/size_t read(fd,buf,sizeof(buf))  返回值：成功：实际读到的字节数  失败：-1
+ size_t write(fd,buf,sizeof(buf)) 返回值：成功：实际写入的字节数  失败：-1
+
+4./lseek
+off_t lseek(fd,偏移量，基准位置)  
+基准位置：SEEK_CUR SEEK_SET SEEK_END
+返回值：偏移量
+
+目录文件
+1./opendir
+(1)
+<sys/types.h>
+<dirent.h>
+DIR *dir=opendir(".")
+
+2./closedir
+closedir(dir);
+
+3./readir
+struct dirent *p=readdir(dir);
+
+
+struct dirent {
+ino_t          d_ino;       /* inode number */
+off_t          d_off;       /* offset to the next dirent */
+unsigned short d_reclen;    /* length of this record */
+unsigned char  d_type;      /* type of file; not supported by all file system types */
+char           d_name[256]; /* filename */               
+};
+
+4./stat
+(1)
+<sys/types.h>
+<sys/stat.h>
+<unistd.h>
+
+struct stat {
+               dev_t     st_dev;     /* ID of device containing file */
+               ino_t     st_ino;     /* inode number */
+               mode_t    st_mode;    /* protection */
+               nlink_t   st_nlink;   /* number of hard links */
+               uid_t     st_uid;     /* user ID of owner */
+               gid_t     st_gid;     /* group ID of owner */ 
+               dev_t     st_rdev;    /* device ID (if special file) */
+               off_t     st_size;    /* total size, in bytes */
+               blksize_t st_blksize; /* blocksize for file system I/O */
+               blkcnt_t  st_blocks;  /* number of 512B blocks allocated */
+               time_t    st_atime;   /* time of last access */
+               time_t    st_mtime;   /* time of last modification */
+               time_t    st_ctime;   /* time of last status change */
+           };
+		   
+
+S_ISREG(m)  is it a regular file?
+
+S_ISDIR(m)  directory?
+
+S_ISCHR(m)  character device?
+
+S_ISBLK(m)  block device?
+
+S_ISFIFO(m) FIFO (named pipe)?
+
+S_ISLNK(m)  symbolic link? (Not in POSIX.1-1996.)
+
+S_ISSOCK(m) socket? (Not in POSIX.1-1996.)
+		   
+struct stat a;
+stat("write.c",&a);
+printf("%#o \n",a.st_mode);
+printf("x = %d\n",S_ISREG(a.st_mode));
+
+
+
+// 练习： 实现 cat 功能。 
+
+// 练习： 实现拷贝功能。 
+
+//练习： 尝试使用 readdir(), 读取当前目录下的所有文件名和 inode 节点号。
+
+// 作业： 用stat 检测一下 从目录中读到的每个文件，哪个是目录，哪个是普通文件
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

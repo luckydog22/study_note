@@ -1,0 +1,757 @@
+/*************************************************
+				day5
+
+**************************************************/
+//示例练习：	Time 类，私有成员 时h，分m，秒s
+						 公有构造
+						 公有函数display(Date& d)
+				Date类   友元Time类中的函数display()
+				         私有成员 年year 月mon 日 day
+						 公有构造
+public.h
+
+#ifndef PUBLIC_H
+#define PUBLIC_H
+
+#include "time.h"
+#include "date.h"
+
+#endif
+
+date.h
+#ifndef DATE_H
+#define DATE_H
+
+#include "public.h"
+
+class Time;
+
+class Date
+{
+friend void Time::display(Date& d);
+public:
+	Date(int y, int m, int d);
+private:
+	int year;
+	int month;
+	int day;
+};
+
+#endif
+
+date.cpp
+
+#include "public.h"
+
+Date::Date(int y, int m, int d):year(y),month(m),day(d)
+{
+
+}
+
+time.h
+
+#ifndef TIME_H
+#define TIME_H
+
+#include "public.h"
+
+class Date;
+
+class Time
+{
+public:
+	Time(int h, int m, int s);
+	void display(Date& d);
+private:
+	int h;
+	int m;
+	int s;
+};
+
+#endif
+
+time.cpp
+
+#include "public.h"
+#include <iostream>
+
+using namespace std;
+
+Time::Time(int h, int m, int s):h(h),m(m),s(s)
+{
+
+}
+
+void Time::display(Date& d)
+{
+	cout<<h<<" "<<m<<" "<<s<<endl;
+	cout<<d.year<<" "<<d.month<<" "<<d.day<<endl;
+}
+
+main
+
+#include<iostream>
+#include "public.h"
+using namespace std;
+
+int main()
+{
+	Time t(1,2,3);
+	Date d(4,5,6);
+	t.display(d);
+	return 0;
+}
+
+//练习：
+1.有个学生类Student 
+
+   包括：私有成员：姓名 成绩  
+   void setData(string name, int score)给成员变量赋值
+   
+2.在main定义student数组5个元素并赋值 Students[5]
+3.设计一个全局友元函数 比较两个学生的成绩的高低int compare(Student&, Student&);
+4.求出最高分和最低分的学生
+-------------------------------------------
+#include<iostream>
+#include <string>
+using namespace std;
+class Student;
+int compare(Student& s1, Student& s2);
+
+class Student
+{
+friend int compare(Student&, Student&);
+public:
+	void setData(string name, int score)
+	{
+		this->name = name;
+		this->score = score;
+	}
+	void show()
+	{
+		cout<<name<<" "<<score<<endl;
+	}
+private:
+	string name;
+	int score;
+};
+
+int main()
+{
+	Student students[5];
+	students[0].setData("大娃",1);
+	students[1].setData("二娃",2);
+	students[2].setData("三娃",3);
+	students[3].setData("四娃",4);
+	students[4].setData("五娃",5);
+
+	int max = 0;
+	int min = 0;
+	for(int i = 1;i < 5;i++)
+	{	
+		if(compare(students[i], students[max]) == 1)
+		{
+			max = i;
+		}
+		else if(compare(students[i], students[min]) == -1)
+		{
+			min = i;
+		}
+	}
+	students[max].show();
+	students[min].show();
+	return 0;
+}
+
+int compare(Student& s1, Student& s2)
+{
+	if(s2.score < s1.score)
+	{
+		return 1;
+	}
+	else if(s1.score < s2.score)
+	{
+		return -1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+//练习：
+1.有个学生类Student 包括私有成员：姓名 成绩 ;  student构造函数对成员赋值
+2.设计一个友元类Teacher 
+	1)teacher类中包含 私有成员数组 student s[5];  构造函数对数组元素赋值
+	2)teacher类对学生数组进行排序  公有成员函数sort(); 降序
+	3)teacher类输出成绩对应等级  公有函数show(); >=90 优 80-89 良  70-79中 60-69及格  <60不及格  
+
+teacher.h
+
+#ifndef TEACHER_H
+#define TEACHER_H
+
+#include "student.h"
+
+class Teacher
+{
+public:
+	Teacher();
+	void sort();
+	void show();
+private:
+	Student students[5];
+};
+
+#endif
+
+teacher.cpp
+
+#include "public.h"
+#include <iostream>
+
+using namespace std;
+
+Teacher::Teacher()
+{
+	students[0] = Student("玉帝", 90);
+	students[1] = Student("哪吒", 20);
+	students[2] = Student("李靖", 66);
+	students[3] = Student("龙王", 40);
+	students[4] = Student("敖丙", 5);
+}
+
+void Teacher::sort()
+{
+	for(int i = 0;i < 4;i++)
+	{
+		for(int j = 0;j < 4-i;j++)
+		{
+			if(students[j].score < students[j+1].score)
+			{
+				Student temp = students[j];
+				//Student temp(students[j]);
+				students[j] = students[j+1];
+				students[j+1] = temp;
+			}
+		}
+	}
+}
+
+void Teacher::show()
+{
+	for(int i = 0;i < 5;i++)
+	{
+		cout<<students[i].name<<" ";
+		if(students[i].score >= 90)
+		{
+			cout<<"优秀"<<endl;
+		}
+		else if(students[i].score >= 80)
+		{
+			cout<<"良"<<endl;
+		}
+		else if(students[i].score >= 70)
+		{
+			cout<<"中"<<endl;
+		}
+		else if(students[i].score >= 60)
+		{
+			cout<<"及格"<<endl;
+		}
+		else
+		{
+			cout<<"不及格"<<endl;
+		}
+	}
+}
+
+student.h
+
+#ifndef STUDENT_H
+#define STUDENT_H
+
+#include "public.h"
+#include <string>
+
+using namespace std;
+
+class Student
+{
+friend class Teacher;
+public:
+	Student(){}
+	Student(string name, int score);
+private:
+	string name;
+	int score;
+};
+
+#endif
+
+
+student.cpp
+
+#include "public.h"
+
+Student::Student(string name, int score):name(name),score(score)
+{
+
+}
+
+main
+
+#include<iostream>
+#include "teacher.h"
+using namespace std;
+
+
+int main()
+{
+	Teacher t;
+	t.sort();
+	t.show();
+	return 0;
+}
+---------------------------------------下面新
+student.h
+#ifndef STUDENT_H
+#define STUDENT_H
+
+#include <string>
+
+using namespace std;
+
+class Student
+{
+friend class Teacher;
+public:
+	Student(string name, int score);
+private:
+	string name;
+	int score;
+};
+
+#endif
+student.cpp
+#include "student.h"
+
+using namespace std;
+
+Student::Student(string name, int score):name(name),score(score)
+{
+
+}
+teacher.h
+#include "student.h"
+
+class Teacher
+{
+public:
+	Teacher();
+	void sort();
+	void show();
+private:
+	Student* students[5];
+};
+teacher.cpp
+#include "teacher.h"
+#include <iostream>
+
+using namespace std;
+
+Teacher::Teacher()
+{
+	students[0] = new Student("易建联", 88);
+	students[1] = new Student("周琦", 80);
+	students[2] = new Student("郭艾伦", 90);
+	students[3] = new Student("赵继伟", 71);
+	students[4] = new Student("阿布都", 60);
+}
+
+void Teacher::sort()
+{
+	for(int i = 0;i < 4;i++)
+	{
+		for(int j = 0;j < 4-i;j++)
+		{
+			if(students[j]->score < students[j+1]->score)
+			{
+				Student* temp = students[j];
+				students[j] = students[j+1];
+				students[j+1] = temp;
+			}
+		}
+	}
+}
+
+void Teacher::show()
+{
+	for(int i = 0;i < 5;i++)
+	{
+		cout<<students[i]->name;
+		if(students[i]->score > 90)
+		{
+			cout<<"优秀"<<endl;
+		}
+		else if(students[i]->score > 80)
+		{
+			cout<<"良"<<endl;
+		}
+		else if(students[i]->score > 70)
+		{
+			cout<<"中"<<endl;
+		}
+		else
+		{
+			cout<<"不及格"<<endl;
+		}
+		
+	}
+}
+main
+#include <iostream>
+#include "teacher.h"
+using namespace std;
+
+
+int main()
+{
+	Teacher t;
+	t.sort();
+	t.show();
+	return 0;
+}
+
+---------------------------------------------------
+
+//练习：给出三角形三边 a、b、c 求三角形周长 
+只有a+b>c b+c>a a+c>b 才能构成三角形 设置异常处理 对不符合三角形条件的 输出警告信息 不予计算
+异常类 class TriExcept  检测方法 check
+
+
+#include<iostream>
+using namespace std;
+
+class TriExcept
+{
+public:
+	void show()
+	{
+		cout<<"三角异常"<<endl;
+	}
+};
+
+void check(int a, int b, int c)
+{
+	if(a+b<=c || a+c<=b || b+c<=a)
+	{
+		TriExcept e;
+		throw e;
+	}
+}
+
+int main()
+{
+	int a, b, c;
+	cin>>a>>b>>c;
+	int l;
+	try
+	{
+		check(a, b, c);
+		l = a+b+c;
+	}
+	catch(TriExcept e)
+	{
+		e.show();
+		return 0;
+	}
+	cout<<l<<endl;
+	return 0;
+}
+----------------------------------------------------------
+t.h
+#ifndef T_H
+#define T_H
+
+class T
+{
+public:
+	T(int a, int b, int c);
+	int length();
+private:
+	int a;
+	int b;
+	int c;
+};
+
+#endif
+
+t.cpp
+#include "t.h"
+#include "exceptt.h"
+
+T::T(int a, int b, int c):a(a),b(b),c(c)
+{}
+
+int T::length()
+{
+	if(a+b<=c || a+c<=b || b+c<=a)
+	{
+		ExceptT et;
+		throw et;
+	}
+	return a+b+c;
+}
+
+exceptt.h
+#ifndef EXCEPT_H
+#define EXCEPT_H
+
+class ExceptT
+{
+public:
+	void print();
+};
+
+#endif
+
+exceptt.cpp
+#include "exceptt.h"
+#include <iostream>
+
+using namespace std;
+
+void ExceptT::print()
+{
+	cout<<"三角牌异常"<<endl;
+}
+
+main
+#include <iostream>
+#include "t.h"
+#include "exceptt.h"
+using namespace std;
+
+
+int main()
+{
+	T t(3, 4, 5);
+	try
+	{
+		int l = t.length();
+		cout<<l<<endl;
+	}
+	catch(ExceptT et)
+	{
+		et.print();
+	}
+	return 0;
+}
+
+--------------------------------------------------
+单例模式：
+头文件
+
+#ifndef ONE_H
+#define ONE_H
+
+class One
+{
+private:
+	int num;
+public:
+	static One* getInstance();
+	void setNum(int num);
+	int getNum();
+private:
+	One(){}
+	One(const One& o){}
+	static One* instance;
+};
+
+#endif
+
+源文件
+
+#include "one.h"
+#include <cstdio>
+
+One* One::instance = NULL;
+
+One* One::getInstance()
+{
+	if(instance == NULL)
+	{
+		instance = new One();
+	}
+	return instance;
+}
+
+void One::setNum(int num)
+{
+	this->num = num;
+}
+
+int One::getNum()
+{
+	return num;
+}
+
+main
+#include <iostream>
+#include "one.h"
+
+using namespace std;
+
+int main()
+{
+	One::getInstance()->setNum(10);
+
+	cout<<One::getInstance()->getNum()<<endl;
+	return 0;
+}
+----------------------------------------
+
+头文件
+#ifndef SUN_H
+#define SUN_H
+
+
+class Sun
+{
+public:
+    static Sun* getInstance();
+    void fire();
+    int getHot();
+private:
+    Sun();
+    Sun(const Sun& other);
+    static Sun *instance;
+    
+    int hot;
+};
+
+#endif // SUN_H
+
+源文件
+#include "sun.h"
+#include <cstdio>
+
+Sun* Sun::instance = NULL;
+
+Sun *Sun::getInstance()
+{
+    if(instance == NULL)
+    {
+        instance = new Sun();
+    }
+    return instance;
+}
+
+void Sun::fire()
+{ 
+    hot++;
+}
+
+int Sun::getHot()
+{
+    return hot;
+}
+
+Sun::Sun():hot(28)
+{
+    
+}
+
+Sun::Sun(const Sun &other)
+{
+    
+}
+main
+#include <iostream>
+#include "sun.h"
+
+using namespace std;
+
+int main()
+{
+    Sun* s = Sun::getInstance();
+    Sun* s2 = Sun::getInstance();
+    Sun* s3 = Sun::getInstance();
+    s->fire();
+    s2->fire();
+    cout<<s3->getHot()<<endl;
+    cout<<s<<endl;
+    cout<<s2<<endl;
+    cout<<s3<<endl;
+    return 0;
+}
+
+----------------------------------------------------------示例：
+
+person.h
+
+#ifndef PERSON_H
+#define PERSON_H
+
+#include <string>
+
+using namespace std;
+
+class Person
+{
+private:
+	string name;
+	Person(){}
+	static Person* instance;
+public:
+	string getName();
+	void setName(string name);
+	static Person* getInstance();
+};
+
+
+#endif
+
+person.cpp
+
+#include "person.h"
+
+Person* Person::instance = NULL;
+
+void Person::setName(string name)
+{
+	this->name = name;
+}
+
+Person* Person::getInstance()
+{
+	if(instance == NULL)
+	{
+		instance = new Person;
+	}
+	return instance;
+}
+
+string Person::getName()
+{
+	return name;
+}
+
+test.cpp
+
+#include <iostream>
+#include "person.h"
+
+using namespace std;
+
+int main()
+{
+	Person* p1 = Person::getInstance();
+	Person* p2 = Person::getInstance();
+
+	p1->setName("xiaoming");
+	cout<<p2->getName()<<endl;//输出  xiaoming
+	cout<<p1<<" "<<p2<<endl;//p1 p2 地址相同
+}

@@ -1,0 +1,67 @@
+文件IO
+
+小知识
+/EOF  文件结束标志  end of file
+/文件若没关闭，之后的操作，会跟在上次操作的下一位继续
+puts只有俩个参数  返回值独特
+feek 返回值 成功失败
+
+io定义，流定义，缓冲区种类
+fflush(stdout);//刷新缓冲区
+
+打开 关闭 读写  定位  错误 清0
+
+
+1./FILE  *fp=fopen("./a.c","r");
+(1)    
+参一：路径包括文件名，
+参二：打开方式
+返回值：流指针   NULL
+(2)
+参二： 
+w:只写的方式打开文件，文件如果不存在，则直接创建；文件若存在，则先清空，后打开
+w+：读写方式打开，
+r：只读方式打开，文件必须存在
+r+：读写方式打开
+a：追加只写方式打开，文件若不存在，则创建;
+a+追加读写的方式打开，
+
+
+2./fclose(fp);
+
+3.（1）/perror("fopen");   /引号里写上命令
+    （2） /<string.h>  <errno.h>
+	/printf("",strerror(errno));
+4.//先容器，后文件
+/读写
+（1）按字节
+    int fgetc(fp)         返回值：读到的内容
+    int fputc(int c,fp)  返回值：写入的内容
+ （2）按行
+     char *fgets(buf,sizeof(buf),fp)  返回值：成功 buf  失败 NULL
+     int fputs(buf,fp)       返回值：成功非负数  失败：EOF
+ （3）按类型
+    int fread(buf,4,sizeof(buf),fp) 
+     参1：容器首地址   参二：读到的单个数据所占自己大小  参三：打算读读多少个字节   返回值：读到的数据个数
+     int write(buf,4,sizeof(buf),fp)   返回值：写入数据的个数
+ 5.
+ （1）int feek(fp,-2,SEEK_END) 
+     参2:偏移量，
+     参3：基准位置
+     返回值：成功返回0  失败-1
+  SEEK_SET     SEEK_CUR   SEEK_END
+  （2）long ftell(fp)  当前位置距离文件开头的偏移量
+ 6.
+ （1）<strings.h>
+       bzero(a,sizeof(a));  参1：首地址   参2：字计数 
+ （2）<string.h>
+		memset(s,'a',sizeof(s))  整数只能填充0  -1
+		
+		
+		练习： 将文件内容输出到终端。 (cat)
+		练习： 实现 cp 功能。
+		作业： 统计文件行数。 
+		作业： 尝试用多种方式（使用标准IO函数），求出文件的大小。
+		
+
+    

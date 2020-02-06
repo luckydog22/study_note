@@ -1,0 +1,313 @@
+复习：
+QT中重要的类
+
+1.QObject	
+
+ 1）QT项目中使用的类基本分为两种，一种为自定义的C++的类，另一种则为QObject类。
+QObject类：
+	      是所有Qt类的基类，父类
+		  实现了信号和槽的机制
+		  实现了内存管理的功能
+		  提供事件处理机制（父子对象的内存管理机制）
+		    每一个对象都有一个父对象，由父对象来负责子对象的内存管理。
+			
+它的最主要特征是关于对象间无缝通信的机制：信号与槽。
+
+2） QObject 以对象树的形式组织起来。当为一个对象创建子对象时，子对象会自动地添加到父对象的children()列表中。
+父对象拥有子对象的所有权，比如父对象可以在自己的析构函数中删除它的孩子对象。使用findChild()或findChildren()通过名字和类型查询孩子对象。
+
+2.QWidget类（窗体部件类）
+   是所有用户界面对象的基类，是QObject类的子类，继承了QObject类的属性:
+   通常作为GUI 应用程序的主界面
+   作为一个容器包含其他图形组件
+   能够处理鼠标键盘事件
+   
+二、QString类
+
+示例：String
+
+1、拼接
+QString s1 = "hello ";
+QString s2 = "world";
+s1 += s2;
+s1.append(" farsight");
+
+2、格式化
+s1.sprintf("%s %d","哈哈",100);
+s1 = QString("%1 was born in %2").arg("小明").arg(1900);
+
+3.数字转字符串
+QString s = QString().setNum(16);
+
+4.判断字符串是否为空
+
+QString s ;
+s.isEmpty()
+
+示例：
+	if(!s.isEmpty())
+   {
+       s.append('0');
+       ui->label_choose->setText(s);
+   }
+   
+5.字符串转换 toInt() toDouble() toFloat() toLong() toLongLong()
+
+示例：toInt()
+
+	QString s = "123";
+	bool ok;
+  int num = s.toInt(&ok,10);
+    if(!ok) return;
+
+6、移除空白字符
+s1 = " hello           good        farsight   ";
+s1 = s1.trimmed();//移除两端空白字符
+s1 = "  hello           good        farsight  ";
+s1 = s1.simplified();//移除两端空白字符，使用单个空格代替字符串中间的空白字符
+
+7、查询
+QString s1 = "Welcome to you!";
+qDebug()<<s1.startsWith("welcome", Qt::CaseInsensitive);//查询开头 大小写不敏感
+qDebug()<<s1.startsWith("welcome");//查询开头 参数2默认为大小写敏感
+qDebug()<<s1.endsWith("you!", Qt::CaseSensitive);//查询结尾
+qDebug()<<s1.contains("to");//包含  参数2默认为大小写敏感
+
+8、其他操作
+1.insert()	在原字符串指定位置插入另一个字符串
+2.prepend()	在原字符串开头插入另一个字符串
+3.replace()	用指定的字符串替换原字符串中的某些字符
+4.比较 > < >= <= ==
+
+
+//补充：
+
+	清空vector中的所有元素：vector<int> v;
+							v.clear();
+	获取最后一个元素：		v.back();
+	移出最后一个元素：		v.pop_back();
+
+//集合 set<int>  s;
+		判断元素是否已经存在：s.count();
+	
+	
+	/****************************
+	
+			新课
+			
+	****************************/
+	
+	页面显示：show（）
+	页面隐藏：hide（）
+	页面关闭：close（）
+	自定义信号
+	
+	
+	
+	
+一、常用控件
+
+
+示例：SomeWidgets
+
+1.widget通用属性
+1）enabled： 控件是否有效（灰色状态）
+
+2）geometry:有x,y,宽度，高度属性，是窗口默认显示的坐标和大小 锚点
+
+3）minimumSize和maxmunSize:设置窗口的最小和最大尺寸
+
+4）font 为字体菜单，选择窗口默认字体和大小
+
+5）cursor 设置鼠标位于窗口中时的显示方式，包括默认状态，选中，等待等。
+
+2.标签 Label
+Label一般用于显示一个提示性的字符串，或者显示图片
+void setText(QString); 				设置label框内的文本
+void hide(); 						    隐藏label框
+void clear(); 						清空label框内所有内容 
+   
+
+3.单行输入框 LineEdit
+
+设置暗文显示（提示文字） ui文件中QLineEdit中placeholderText中设置
+
+LineEdit可以提供文本输入（单行）
+void setPlaceholderText(QString)		设置提示字
+void setText(QString)				  设置编辑框内的文本
+	QString text()  					获取输入框的当前文本
+
+void setMaxLength(int)				设置文本的最大允许长度
+void setEchoMode(QLineEdit)		设置文本显示模式，password为黑点
+
+
+void setReadOnly(bool)				把设置编辑框为只读模式，无法进行编辑.
+void setEnabled(bool)				设置是否激活行编辑框，作用和ReadOnly类似
+
+bool isModified()					判断文本是否被修改
+QString selectedText()				返回被选中的文本
+
+
+
+ ui->lineEdit_input->setEchoMode(QLineEdit::Password);//输入内容为不可见的圆点
+ 
+ 练习：两个页面，其中各有一个按钮，点击第一个页面中的按钮，弹出第二个页面，第一个页面隐藏；
+ 点击第二个页面中的按钮，显示第一个页面，第二个页面关闭，实现两个页面的切换。
+ 
+ 示例111
+ 
+练习：设计登录界面，密码设定为密文最大六位，输入用户名和密码后点击登录按钮，将输入的按钮与程序预留的用户名和密码比对，
+在当前界面使用Label显示登录结果,跳转到另外一个页面。
+MyEnter示例
+
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
+
+#include <QMainWindow>
+#include "suss.h"
+namespace Ui {
+class MainWindow;
+}
+
+class MainWindow : public QMainWindow
+{
+    Q_OBJECT
+
+public:
+    explicit MainWindow(QWidget *parent = 0);
+    ~MainWindow();
+
+private slots:
+    void on_pushButton_clicked();
+
+private:
+    Ui::MainWindow *ui;
+    QString userName;
+    QString psw;
+    suss s;
+};
+
+#endif // MAINWINDOW_H
+
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
+
+MainWindow::MainWindow(QWidget *parent) :
+    QMainWindow(parent),
+    ui(new Ui::MainWindow)
+{
+    ui->setupUi(this);
+    userName = "admin";
+    psw = "123456";
+
+    ui->lineEdit_psw->setMaxLength(6);
+    ui->lineEdit_psw->setEchoMode(QLineEdit::Password);
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+//登录按钮
+void MainWindow::on_pushButton_clicked()
+{
+     QString user = ui->lineEdit_user->text();
+     QString pass = ui->lineEdit_psw->text();
+     if(user == userName )
+     {
+         if( pass == psw)
+         {
+             ui->label_3->setText("suss");
+                s.show();
+                //this->hide();
+
+         }
+
+     }else
+     {
+         ui->label_3->setText("用户名错误");
+     }
+}
+
+
+
+综合示例：MySomeWidgets
+
+4、复选框 QCheckBox
+isChecked()判断是否选中
+
+5、单选按钮 QRadioButton
+同一个父节点下的QRadioButton只能有一个被选中
+isChecked()判断是否选中
+
+6、分组框 QGroupBox
+
+7、组合框 QComboBox 
+currentText()当前选中条目的文本内容
+currentTextChanged  更改条目之后，自动显示 这是发送的信号
+
+8、自旋钮 QSpinBox
+value()得到值
+eg:
+ui->spinBox->value();
+QString().setNum(ui->spinBox->value());
+QString("%1").arg(ui->spinBox->value());
+
+9、双精度自旋框 QDoubleSpinBox
+value()得到值
+
+10、滑动条QSlider 和滚动条QScrollBar
+//属性：
+  minimum最小值 
+  maximum最大值
+//信号：
+sliderMoved滑动slider改变值   
+sliderReleased滑动结束改变值
+value()     获得当前值
+//滚动条QScrollBar
+valueChanged鼠标点击改变值  
+
+11、进度条 QProgressBar
+
+在qt中使用头文件：include<windows.h>
+使用方法：Sleep(1);
+
+//属性：
+    minimum最小值 
+	maximum最大值 
+	textVisible显示进度数字
+value()    获得当前进度值
+setValue()  改变进度值
+
+12、列表 QListWidget
+QListWidget继承QListView，不需要自己建模，易于使用
+
+//信号：
+   itemDoubleClicked 当item双击时触发
+   
+   
+ 布局：
+ 
+使空间水平对齐：按住ctrl键，选中控件，点H
+		垂直：ctrl+L
+  
+示例：label显示图片，大小自适应
+
+ //按照给定的图片路径，生成一个图片资源，传入参数：文件名/路径
+    QPixmap p = QPixmap(":/src/3.jpg");
+    //给定label显示的资源，（按照给入的文件名，构建一个资源，）
+    ui->label->setPixmap(p);
+    //自适应大小
+    ui->label->setGeometry(QRect(ui->label->pos(),p.size()));
+
+  
+作业或练习：用label显示图片，一个按钮，点击按钮切换两张图片。	  
+作业或练习：用label显示图片，两个按钮，点击按钮切换多张图片，简易图片浏览器
+			（两种方式选一：图片放入容器中保存vector<QPixmap> images ;  vector<QString> images;  ）
+
+作业或者练习：两个窗口，都包含一个按钮，点击按钮，实现两个窗口切换显示（自定义信号） 答案：练习111 
+作业或练习：设计填写表单界面，使用lineEdit输入姓名，自旋钮选择年龄，单选按钮组选择性别，复选框勾选兴趣爱好，组合框选择地区。
+      点击提交按钮后，将所有填写的信息显示到界面下方的标签中	
+答案：MyForm
+
+		  

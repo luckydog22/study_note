@@ -1,0 +1,142 @@
+
+作业参考答案： 
+
+1. 求文件行数
+//////////////////
+#include <stdio.h>
+int main(int argc,char *argv[])
+{
+	if(argc < 2)    // 参数 
+	{
+		printf("%s filename \n",argv[0]);
+		return -1;
+	}
+	FILE *fp = fopen(argv[1],"r");    // 打开  
+	if(fp == NULL)
+	{
+		perror("fopen");
+		return -1;
+	}
+	
+	int line = 0;      // 统计行数的初始值。 
+	char s[256] = {0};
+	char *x;
+	while ((x = fgets(s,sizeof(s),fp)) != NULL)    // 循环按行读取，统计个数。 
+		line ++;
+	printf("line : %d\n",line);     // 输出结果
+	fclose(fp);    // 关闭文件  
+	return 0;
+}
+
+1. 求文件行数
+/////////////
+#include <stdio.h>
+int main(int argc,char *argv[])
+{
+	if(argc < 2)
+	{
+		printf("%s filename \n",argv[0]);
+		return -1;
+	}
+	FILE *fp = fopen(argv[1],"r");
+	if(fp == NULL)
+	{
+		perror("fopen");
+		return -1;
+	}
+	
+	int line = 0;
+	int x;
+	while ( (x=fgetc(fp)) != EOF )     // 按字节读取。 
+		if( x == '\n')      // 只要有换行符就 +1. 
+			line ++;
+
+	printf("line : %d\n",line);
+	fclose(fp);
+	return 0;
+}
+
+2. 求文件大小 
+/////////////////
+#include <stdio.h>
+int main(int argc,char *argv[])
+{
+	if(argc < 2)
+	{
+		printf("%s filename \n",argv[0]);
+		return -1;
+	}
+	FILE *fp = fopen(argv[1],"r");
+	if(fp == NULL)
+	{
+		perror("fopen");
+		return -1;
+	}
+	
+	int line = 0;
+	int x;
+	while ( (x=fgetc(fp)) != EOF )     // 按字节读取。读到一个加一个。
+			line ++;
+
+	printf("line : %d\n",line);
+	fclose(fp);
+	return 0;
+}
+
+
+2. 求文件大小 
+/////////////////
+#include <stdio.h>
+int main(int argc,char *argv[])
+{
+	if(argc < 2)
+	{
+		printf("%s filename \n",argv[0]);
+		return -1;
+	}
+	FILE *fp = fopen(argv[1],"a");      // 追加打开   
+	if(fp == NULL)
+	{
+		perror("fopen");
+		return -1;
+	}
+	printf("off : %ld\n",ftell(fp));   // 求偏移量  
+	fclose(fp);
+	return 0;
+}
+
+
+3. 输出一个目录下的所有文件的属性
+////////////////////
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <dirent.h>
+int main()
+{
+	DIR *dirp = opendir(".");    // 打开当前目录 
+	if(dirp == NULL)
+	{
+		perror("opendir");
+		return -1;
+	}
+
+	struct dirent *rp = NULL;
+	struct stat a;
+	while((rp=readdir(dirp)) != NULL)    // 读取目录中的内容。 
+	{
+		if(rp->d_name[0] != '.')    // 读到的名字去掉隐藏文件  
+		{
+			stat(rp->d_name, &a);       // 通过名字获取该文件的属性。 （文件属性，看a的成员变量 st_mode）
+			if( S_ISREG(a.st_mode) )
+				printf("%9s is regular file\n",rp->d_name);
+			else if( S_ISDIR(a.st_mode) )         // 带参宏用来做辅助判定。 
+				printf("%9s :  dir \n",rp->d_name);
+			else 
+				printf("Others\n");
+		}
+	}
+	closedir(dirp);
+	return 0;
+}

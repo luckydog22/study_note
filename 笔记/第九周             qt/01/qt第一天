@@ -1,0 +1,448 @@
+一、QT简介
+
+1、Qt是一个1991年由Qt Company开发的 跨平台 C++ 图形用户界面应用程序开发框架。
+
+2、它既可以开发GUI程序，也可用于开发非GUI程序，比如控制台工具和服务器。
+
+3、Qt是面向对象的框架，使用特殊的代码生成扩展（称为元对象编译器(Meta Object Compiler, moc)）
+	以及一些宏，Qt很容易扩展，并且允许真正地组件编程。
+	
+4、Qt包括多达500个以上的C++类，还提供基于模板的collections，serialization，
+	file，I/O device，directory management，date/time类。甚至还包括正则表达式
+	的处理功能。
+	
+/******
+
+    总结
+
+*****************/
+//qt是什么？
+是一个跨平台开发 c++ GUI图形应用程序开发框架  她的内部包含了一组类库   我们可以使用他来开发GUI程序（非GUI程序）
+GUI： 图形界面 主要用来做图形界面
+
+//跨平台？
+使用我们的qt开发程序，可以实现在不同的平台（windeows linux android等）
+
+//Qt
+是面向对象的思想
+
+//Qt的优势
+		1）跨平台
+
+		2）面向对象的思想
+		
+		3）信号与槽，实现各个对象之间的通信，与c++唯一的不同
+		
+		4）很多的api函数
+	
+3、第一个QT项目
+
+/***分析
+GUI应用程序的框架  *****/
+
+1）pro文件： 通常我们视他为qt项目的配置文档
+
+QT       += core gui    network //网络    
+						sql 数据库  //项目指定用到的模块 
+
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+
+TARGET = demo1    //应用工程的名称
+TEMPLATE = app   //模块变量
+
+    常用：1） app: 构建应用
+		  2） lib：构建动态库或者静态库
+ 
+
+
+SOURCES += main.cpp\      //源文件
+        widget.cpp
+
+HEADERS  += widget.h	//头文件
+
+FORMS    += widget.ui   //界面文件
+
+2)widget类
+ 主界面窗口类，从Qwidget继承过来的
+ 
+3)main函数  
+包含main函数，定义应用程序的对象和主窗体对象
+显示主窗体
+程序运行
+
+
+
+二、QObject	
+
+1. QObject 内存管理机制
+
+	1）以对象树的形式组织起来。
+	当为一个对象创建子对象时，子对象会自动地添加到父对象的children()列表中
+	父对象拥有子对象的所有权，比如父对象可以在自己的析构函数中删除它的孩子对象	
+	
+2. QT项目中使用的类基本分为两种，一种为自定义的C++的类，另一种则为QObject类。
+
+QObject类：
+	1）是所有qt类的基类，父类
+	2）实现内存管理机制
+	3）实现了信号与槽的机制
+	4）提供了处理机制（父子对象的内存管理机制）
+		每一个对象都有一个父对象，由父对象来负责子对象的内存管理。
+	      
+			
+****它的最主要特征是关于对象间无缝通信的机制：信号与槽。
+
+3. gui程序是由事件驱动的，常用的有鼠标事件，键盘事件
+
+
+锚点
+
+
+
+
+三、初识ui
+
+//示例：showHello
+1.UI设计步骤
+①　拖拽想要的控件至指定位置
+1)label标签控件：可以显示文本信息
+2)push_button：普通按钮
+②　更改objectName，以供代码操作使用
+③　在代码中使用ui指针找到指定控件的objectName并进行操作
+④　添加信号和槽等候用户操作
+2.objectName的起名
+使用 控件名_功能名 进行起名
+例如：label_name,pushButton_submit等;
+
+
+四、信号与槽
+
+示例：showHello
+
+信号和槽机制是qt的核心机制
+
+当一个对象的状态发生变化时，通过信号的方式通知其他对象，其他对象通过执行相应的槽函数来响应该信号。
+
+信号与槽是QT提供的任意两个（QObject）对象之间的通信机制，常用来完成界面操作的响应。
+
+/******信号*******/
+
+信号：是可以看作是一个请求或者一个动作的标志。
+
+//信号的理解：
+1）信号是属于对象的
+2）当对象的状态改变时，发射信号
+
+
+/******槽*******/
+槽：其实就是一个处理函数，是在对象中声明为slots：之下的函数及其实现
+槽是一个对象对他感兴趣的对象的某个时间做出处理。
+其信号槽工作的过程是：当一个对象发射一个信号的时候，则和其连接的对象的槽函数进行处理，等槽函数处理完成之后退出并执行接下来的内容。
+
+//槽函数理解：
+槽函数：本质 就是类的成员函数，我们可以调用类的成员函数一样来调用槽函数
+
+//槽函数 跟普通类的成员函数的区别：
+槽函数可以跟 信号建立起关联，而普通的成员函数不可以
+
+2、 使用方法：
+
+ connect(ui->pushButton_on,SIGNAL(clicked()),this,SLOT(btn_add_slot()));
+
+使用步骤：
+①　创建一个函数作为槽函数（在声明处使用访问权限 slots:进行修饰），并完成实现
+②　在槽函数中编写接到信号后的一系列处理（改文本等）
+③　在构造函数中使用connect函数进行信号与槽的连接
+④　依次在connect函数中 指定信号发送者，设定触发发送信号的方式，指定接收者，设定已定义好的槽函数
+
+4、定义槽函数
+访问权限+slots:  
+		槽函数声明
+
+public slots:
+    void btn_showHello_slot();
+	
+练习1：定义两个label，点击按钮，两个label同时显示hello world
+
+练习2：定义两个label，点击按钮，一个显示hello ，一个显示world
+
+
+练习3：定义两个button，点击第一个按钮，两个label同时显示hello ，第二个button，只有一个label显示变为world
+
+练习4：实现灯 1）开关功能，一个按钮，文字显示 on/off 一个label显示 ：灯：开/关 ，点击一次按钮，label切换显示 灯：开  和  灯：关
+			  2）send按钮，显示一句话到label中
+
+
+
+	
+5、自定义信号
+信号函数声明（信号函数不可以被实现）
+
+signals:		
+		void muSignal();
+		void mySignalParam(int x,int y);可以带参数
+		
+6、发送信号
+emit 信号函数
+
+6、信号和槽的参数传递
+1. 当信号与槽函数的参数数量相同时，它们参数类型要完全一致。
+2. 当信号的参数与槽函数的参数数量不同时，只能是信号的参数数量多于
+	槽函数的参数数量，且左边相同数量的参数类型应一致，信号中多余的参数会被忽略。
+
+综合说明：
+#ifndef WIDGET_H
+#define WIDGET_H
+
+#include <QWidget>
+
+namespace Ui {
+class Widget;//根据ui文件生成的类，和下面的Widget不是一个类
+}
+
+class Widget : public QWidget
+{
+    Q_OBJECT
+    //添加QT对象属性的宏 要是继承QObject的类，必须调用这个宏
+public:
+    explicit Widget(QWidget *parent = 0);
+    //继承QObject的类 在构造函数中都要指定父节点参数
+    //因为有父节点时对象才能被自动删除
+    ~Widget();
+
+
+ //定义槽函数：关键字 slots
+ //格式：访问权限 slots:
+ //普通成员函数区别：槽函数可以关联信号与槽 普通函数是不能的
+ public slots:
+  void btn_showHello_slot();  //send sumit
+  void btn_show2_slot();
+
+  //定义一个槽函数，来处理我自己的信号
+  void my_signal_slot();
+//定义一个槽函数，来处理我自己的信号,带参数
+
+  //定义一个槽函数，能够接受信号带过来的参数
+   void my_signal_Info_slot(int num);
+
+
+  //定义信号 signals: 注意：1.没有访问权限  2.信号没有cpp文件的实现 ，只有声明
+ signals:
+  //不带参数的信号
+//  void my_signal();
+
+//定义带参数的信号 信号可带多个参数，槽函数可根据实际情况，用几个，接几个，剩下的自动忽略
+  void my_signal_info(int num,int a,int b);
+
+
+
+private:
+    Ui::Widget *ui;//指向界面文件生成的UI对象的指针
+    bool b;
+};
+
+#endif // WIDGET_H
+
+-------------------------------------------------------------------------
+#include "widget.h"
+#include "ui_widget.h"
+#include<QDebug>
+
+
+
+Widget::Widget(QWidget *parent) :
+    QWidget(parent),//初始化父类
+    ui(new Ui::Widget)//创建ui对象
+{
+    ui->setupUi(this);  //设置ui的父对象  让UI对象与当前的窗口产生关联
+
+    //槽函数也可以调用
+    btn_showHello_slot();
+
+    b = true;
+     //3.关联两个对象  connect 四个参数：1. 发送信号的对象 2. 发送的信号 3. 接受者所在的位置 4.对应处理的槽函数
+
+    connect(ui->btn_1,SIGNAL(clicked()),this,SLOT(btn_showHello_slot()));
+    connect(ui->btn_2,SIGNAL(clicked()),this,SLOT(btn_show2_slot()));
+
+    //3.关联自己的信号与槽
+   // connect(this,SIGNAL(my_signal()),this,SLOT(my_signal_slot()));
+    connect(this,SIGNAL(my_signal_info(int,int,int)),this,SLOT(my_signal_Info_slot(int)));
+
+}
+
+Widget::~Widget()
+{
+    delete ui;
+}
+//槽函数的实现
+void Widget::btn_showHello_slot()
+{
+  if(b)
+  {
+      ui->label_1->setText("open");
+      b = false;
+  }else
+  {
+      ui->label_1->setText("close");
+      b = true;
+  }
+  //发出我自己的信号 emit
+  //emit my_signal();
+
+  emit my_signal_info(2,3,4);
+}
+void Widget::my_signal_Info_slot(int num)
+{
+    //让label显示int类型
+    ui->label_2->setNum(num);
+}
+
+void Widget::btn_show2_slot()
+{
+    ui->label_1->setText("hahaha");
+}
+
+void Widget::my_signal_slot()
+{
+    ui->label_2->setText("my sigal test");
+}
+
+---------------------------------------------------------
+
+#include "widget.h"
+#include <QApplication>
+//QApplication管理了各种各样的应用程序的广泛资源，比如默认的字体和光标。
+int main(int argc, char *argv[])
+{
+   //a是这个程序的QApplication对象，必须创建，是该程序应用的对象。
+    QApplication a(argc, argv);
+    Widget w;//创建一个窗口，默认是只创建不显示
+    w.show();//显示主窗体
+
+    //通过a  运行应用程序；当调用QApplication.exec()时，就进入了事件循环，应用程序就开始等待并处理事件
+    return a.exec();
+}
+
+
+练习1：使用Label显示PushButton点击的次数，每点击一次PushButton，Label显示的数字加1
+	
+答案：Add1
+
+
+
+
+五、QString类
+
+3.输出调试信息 （使用QDebug类）
+包含头文件：#include <QDebug>
+
+说明：向使用printf一样使用，qDebug函数输出调试信息
+int conter = 9;
+qDebug("connect ok %d\n",conter);
+
+向使用cout一样使用输出调试信息
+qDebug()<<"hello";
+
+
+
+示例：String
+
+练习：
+
+1、拼接
+
+ //1.字符串拼接  定义字符串用QString     QString s1
+    QString s1 = "hello";
+    QString s2 = " world";
+
+    s1+=s2;
+
+    //字符串追加
+    s1.append(" hey");
+    qDebug()<<s1;
+
+练习：“你好” “世界” 追加“！”	
+	
+2.追加 append
+
+  s1.append(" hey");
+  qDebug()<<s1;
+
+3.判断字符串是否为空
+QString s ;
+s.isEmpty()
+
+示例：
+	if(!s.isEmpty())
+   {
+       s.append('0');
+       ui->label_choose->setText(s);
+   }
+
+4.字符串清空  clear()
+
+ s1.clear();
+ qDebug()<<s1;
+   
+5、格式化
+
+ 将"哈哈" 100 输出；
+ char buf[100];
+ 
+ sprintf(buf,"%s %d","哈哈",100);
+ 
+  //替换 1替换成第一个arg中的参数  2替换第二个arg中的参数
+ s1 = QString("%1 was born in %2").arg("小明").arg(1900);
+ 
+ 
+ 6.数字转字符串
+ 
+QString s = QString().setNum(16);
+QString s1 = QString("%1").arg(16);
+
+7.移出空白字符
+
+   QString s5 = "   hello       good      farsight    ";
+        //移出两端空白字符
+           s5 = s5.trimmed();
+          qDebug()<<s5;
+        //移出两端空白字符，使用单个空格代替字符串中间的空白字符
+            s5 = s5.simplified();
+            qDebug()<<s5;
+
+8.字符串转换 toInt() toDouble() toFloat() toLong() toLongLong()
+ QString s6 = "123";
+     bool ok;
+    int hex =  s6.toInt(&ok,16);//转换成十六进制
+    if(ok)//转换是否成功  转换成功 返回值为true
+    {
+        qDebug()<<hex;
+    }
+
+    int dec = s6.toInt(&ok);//参数2位默认10进制
+    qDebug()<<dec;
+
+9.比较 > < >= <= ==
+
+ QString s7 = "hello";
+    QString s8 = "helo";
+    if(s7 > s8)
+        qDebug()<<"s7>s8";
+    else
+        qDebug()<<"not";
+
+作业：彩票35选7
+1.制作彩票选号面板，可以通过点击按钮选出35以内的一个数，通过确认键保存向量中vector，共选出七个号
+2.选号结束后，随机生成七个35以内的号码
+3.计算获奖情况
+7中3	奖金10元
+7中4	奖金500元
+7中5	奖金20000元
+7中6	奖金100000元
+7中7	奖金500000元
+
+
+
+晚自习3：实现简易计算器功能
+示例：MyCalculator

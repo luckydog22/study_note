@@ -1,0 +1,347 @@
+
+练习 01  调用系统函数  filter2D(src, dst, src.depth(), kernel);  //将图片锐化
+（1） 通过filter2d 实现对比度
+（2） 通过filter2d 实现给视频进行锐化处理
+
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+#include <vector>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int main(int argc, char *argv[])
+{
+    VideoCapture v;  //定义视频采集类
+
+    if(v.open("01.mp4") == false)  //判断是否打开视频
+    {
+        cout<<"v error "<<endl;
+        return 0;
+    }
+
+    Mat mat_1;  //接收读出来的视频的图片
+    Mat mat_2;  //锐化后的图片
+
+    namedWindow("window",CV_WINDOW_AUTOSIZE);
+
+    Mat kernel = (Mat_<char>(3,3) << 0,-1,0,-1,5,-1,0,-1,0);  //设置掩膜核心  不知道原理  记住就行
+
+    char c = 0 ;
+    while(v.read(mat_1) == true)   //读取视频中的图片
+    {
+        c = waitKey(30);
+        if(c == 32)
+        {
+            break;
+        }
+        
+        filter2D(mat_1,mat_2,mat_1.depth(),kernel);  //锐化图片
+
+        imshow("window",mat_2);  //显示锐化后的图片
+     }
+
+    return 0;
+}
+
+练习03:访问像素实现rgb进行多通道图像色彩反差
+
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+#include <vector>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int main(int argc, char *argv[])
+{
+    Mat mat_1 = imread("head7.jpg");
+
+    for(int row=0; row < mat_1.rows; row++)     //遍历行
+    {
+        for(int col=0; col < mat_1.cols; col++)    //遍历列
+        {
+            mat_1.at<Vec3b>(row,col)[0]  = 255-mat_1.at<Vec3b>(row,col)[0];     //获得第一个反差像素
+            mat_1.at<Vec3b>(row,col)[1]  = 255-mat_1.at<Vec3b>(row,col)[1];     //获得第二个反差像素
+            mat_1.at<Vec3b>(row,col)[2]  = 255-mat_1.at<Vec3b>(row,col)[2];     //获得第三个反差像素
+        }
+    }
+
+    namedWindow("window",CV_WINDOW_AUTOSIZE);
+
+    imshow("window",mat_1);    //显示反差图
+
+    waitKey(0);
+
+    return 0;
+}
+
+练习04: 访问视频图像像素实现视频图像色彩反差（单通道，3通道）
+
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+#include <vector>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int main(int argc, char *argv[])
+{
+    VideoCapture v;  //定义视频采集类
+
+    if(v.open("01.mp4") == false)   //打开视频
+    {
+        cout<<"v error"<<endl;
+        return -1;
+    }
+
+    Mat mat_1;  //接收图片
+    Mat mat_2;  //反差图片
+   // Mat mat_g;    //灰度化图片
+
+    namedWindow("window",CV_WINDOW_AUTOSIZE);  //命名窗口显示
+
+    char c = 0;
+
+    while(v.read(mat_1))   //读取视频中的图片  一次读一张
+    {
+        c = waitKey(30);   //30毫秒检测是否键入数据
+
+        if(c == 32)
+        {
+            break;
+        }
+
+       // cvtColor(mat_1,mat_g,CV_BGR2GRAY);   //灰度化
+
+        bitwise_not(mat_1,mat_2);   //获得反差图
+        
+      //  bitwise_not(mat_1,mat_2);   //获得反差图
+
+        imshow("window",mat_2);  //显示反差图
+    }
+
+    return 0;
+}
+练习 05
+	（1）图像混合例子
+	（2）获得视频截图
+	（3）视频和图片混合
+	
+（1）图像混合例子
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+#include <vector>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int main(int argc, char *argv[])
+{
+    Mat mat_1 = imread("head2.jpg");   //图片1
+    Mat mat_2 = imread("head3.jpg");   //图片2
+    Mat mat_dst= Mat::zeros(mat_1.size(),mat_1.type());   //混合后的图片
+
+    namedWindow("window",CV_WINDOW_AUTOSIZE);
+
+    if( (mat_1.rows == mat_2.rows) && (mat_1.cols == mat_2.cols) && (mat_1.type() == mat_2.type())) 		//如果要混合的两张图片 一致（行 列 类型）则混合
+    {
+        addWeighted(mat_1,0.5,mat_2,0.5,0.0,mat_dst);   //调用系统的混合图片的函数
+    }
+    else
+    {
+        cout<<"图片不一致"<<endl;
+    }
+
+    imshow("window",mat_dst);  //显示混合后的图片
+
+    waitKey(0);
+
+    return 0;
+}
+
+（2）获得视频截图
+（3）视频和图片混合
+
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+#include <vector>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int main(int argc, char *argv[])
+{
+    VideoCapture v;   //定义视频采集类对象
+
+    if(v.open("01.mp4") == false)   //打开视频
+    {
+        cout<<"v error"<<endl;
+        return -1;
+    }
+
+    Mat mat_1;    //保存读取视频中的图片
+    Mat mat_2;    //视频中的第一张图片
+    Mat mat_dst;  //混合后的图片
+
+    namedWindow("window",CV_WINDOW_AUTOSIZE);  //命名窗口 显示
+
+    char c = 0;
+
+    v.read(mat_2);  //保存视频中的第一张图片
+
+    while(v.read(mat_1))  //读取视频中的图片 从第二张开始
+    {
+        c = waitKey(30);
+        if(c == 32)     //按空格 结束
+        {
+            break;
+        }
+
+        if((mat_1.rows == mat_2.rows) && (mat_1.cols == mat_2.cols) && (mat_1.type() == mat_2.type()))  //如果图片一致（row col  type） 则混合
+        {
+            addWeighted(mat_1,0.5,mat_2,0.5,0.0,mat_dst);  //混合图片
+        }
+
+        imshow("window",mat_dst);   //显示图片
+    }
+
+    return 0;
+}
+
+练习06： 提高rgb图像及gray图像的的亮度
+
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+#include <vector>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int main(int argc, char *argv[])
+{
+    Mat mat_1 = imread("head7.jpg");  //打开一张图片
+    if(mat_1.data == 0)
+    {
+        cout<<" mat_1 error"<<endl;
+        return -1;
+    }
+    namedWindow("window",CV_WINDOW_AUTOSIZE);
+    imshow("window",mat_1);
+
+    Mat mat_dst(mat_1.size(),mat_1.type());  //提高对比度和亮度后的图片
+
+    int channels = mat_1.channels();  //获得原图片的通道
+    int alpha = 5;   //alpha > 0 控制图像对比度
+    int beta = 50;   //增益变量 控制图像亮度
+
+    for(int row=0; row<mat_1.rows; row++)  //遍历行
+    {
+        for(int col=0; col < mat_1.cols; col++)  //遍历列
+        {
+            if(channels == 3)   //当图片通道为3时
+            {
+                Vec3b x = mat_1.at<Vec3b>(row,col);   //找到图片中的像素
+                mat_dst.at<Vec3b>(row,col)[0] = saturate_cast<uchar>(alpha*x[0] + beta);    //修改图片中像素中的第一个子像素
+                mat_dst.at<Vec3b>(row,col)[1] = saturate_cast<uchar>(alpha*x[1]+ beta);     //修改图片中像素中的第二个子像素
+                mat_dst.at<Vec3b>(row,col)[2] = saturate_cast<uchar>(alpha*x[2] + beta);    //修改图片中像素中的第三个子像素
+            }
+            else if(channels == 1)  //当图片为单通道时
+            {
+                uchar x = mat_1.at<uchar>(row,col);   //找到图片中的像素
+                mat_dst.at<uchar>(row,col) = saturate_cast<uchar>(alpha*x +beta);   //修改图片中像素中的子像素
+            }
+        }
+    }
+
+    namedWindow("window1",CV_WINDOW_AUTOSIZE);
+    imshow("window1",mat_dst);  //显示提高对比度和亮度后的图片
+
+    waitKey(0);
+
+    return 0;
+}
+练习07：提高视频图像的亮度(视频gray图像)
+
+练习08：提高视频图像的亮度(视频bgr图像)
+
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+#include <vector>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int main(int argc, char *argv[])
+{
+
+    VideoCapture v;    //定义视频采集类对象
+    if(v.open("01.mp4") == false)  //打开视频
+    {
+        cout<<"v error"<<endl;
+        return -1;
+    }
+
+    Mat mat_1;  //读取视频中的图片
+
+    int alpha = 2;   //alpha > 0 控制图像对比度
+    int beta = 10;   //增益变量 控制图像亮度
+
+    char c = 0;
+
+    while(v.read(mat_1) == true)  //读取视频中的图片
+    {
+        c = waitKey(30);
+        if(c == 32)
+        {
+            break;
+        }
+
+        int channels = mat_1.channels();  //获得原图片的通道
+
+//        cvtColor(mat_1,mat_1,CV_BGR2GRAY);  //灰度化 单通道
+
+        Mat mat_dst(mat_1.size(),mat_1.type());  //设置提高对比度和亮度后的图片大小和类型
+
+        for(int row=0; row<mat_1.rows; row++)  //遍历行
+        {
+            for(int col=0; col < mat_1.cols; col++)  //遍历列
+            {
+                if(channels == 3)   //当图片通道为3时
+                {
+                    Vec3b x = mat_1.at<Vec3b>(row,col);   //找到图片中的像素
+                    mat_dst.at<Vec3b>(row,col)[0] = saturate_cast<uchar>(alpha*x[0] + beta);    //修改图片中像素中的第一个子像素
+                    mat_dst.at<Vec3b>(row,col)[1] = saturate_cast<uchar>(alpha*x[1]+ beta);     //修改图片中像素中的第二个子像素
+                    mat_dst.at<Vec3b>(row,col)[2] = saturate_cast<uchar>(alpha*x[2] + beta);    //修改图片中像素中的第三个子像素
+                }
+                else if(channels == 1)  //当图片为单通道时
+                {
+                    uchar x = mat_1.at<uchar>(row,col);   //找到图片中的像素
+                    mat_dst.at<uchar>(row,col) = saturate_cast<uchar>(alpha*x +beta);   //修改图片中像素中的子像素
+                }
+            }
+        }
+        namedWindow("window1",CV_WINDOW_AUTOSIZE);
+        imshow("window1",mat_dst);  //显示提高对比度和亮度后的图片
+    }
+
+    return 0;
+}

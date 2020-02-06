@@ -1,0 +1,223 @@
+
+复习： 
+对表的操作：   create    drop     alter 
+对记录的操作： insert    select   update   delete  
+多表联合查询： 
+select                *                    from      table    where           条件1         and          条件2        ;
+select student.name,student.age,grade.data from student,grade where student.name='zhangsan' and grade.name='zhangsan' ;
+
+
+
+一、  数据库的 c 编程接口 
+
+1. 打开数据库  
+函数原型： int sqlite3_open(const char *path, sqlite3 **db);
+参数：     参数1： 数据库名 
+		   参数2： 指向 sqlite句柄的指针  
+返回值：   成功：0（SQLITE_OK）   失败：-1
+
+2. 关闭数据库 
+函数原型： int sqlite3_close(sqlite3 *db);
+返回值：   成功：0          失败： -1 
+
+3. 打印出错信息   
+函数原型： const char *sqlite3_errmsg(sqlite3 *db);
+
+示例： 
+//////////////////////
+#include <sqlite3.h>
+#include <stdio.h>
+int main()
+{
+	sqlite3 *db;
+	if(sqlite3_open("./a.db", &db) != SQLITE_OK)    // 打开数据库  
+	{
+		printf("%s\n",sqlite3_errmsg(db));		// 打印出错信息 
+		return -1;
+	}
+	printf("ok\n");
+	sqlite3_close(db);   // 关闭数据库  
+}
+编译及执行：  
+:~$  gcc open.c -lsqlite3 
+:~$  ./a.out 
+
+
+4. 执行 sql 语句的编程接口
+函数原型：   int sqlite3_exec(sqlite3 *db, const  char  *sql,  sqlite3_callback callback, void *,  char **errmsg);
+参数：       参数1：  数据库句柄 
+			 参数2：  sql 语句
+			 参数3：  回调函数  
+			 参数4：  回调函数的参数  
+			 参数5：  错误信息指针的地址。 
+返回值： 成功：0      失败： 错误码  
+示例：    sqlite3_exec(db, "create table student(name varchar[10], age integer);",NULL,NULL,&errmsg);
+
+*!*关于回调函数： 
+功能：       每找到一条记录，就执行一次该回调函数。 
+函数原型：   typedef  int (*sqlite3_callback)(void *, int, char **, char **);
+参数：       参数1： 传递的参数。 
+			 参数2： 字段数。 
+			 参数3： 字段值。 
+			 参数4： 字段名称。 
+返回值：    成功： 0      失败： -1 。
+
+示例： 
+////////////////////////////
+#include <stdio.h>
+#include <sqlite3.h>
+// 回调函数。 
+int callback(void *p, int column, char **value, char **name)
+{
+	int i;
+	printf("**************************\n");
+	for(i=0; i<column; i++)
+		printf("%9s : %9s\n",name[i], value[i]);
+	return 0;
+}
+int main()
+{
+	sqlite3 *db;
+	if(sqlite3_open("./my.db", &db) != SQLITE_OK)
+	{
+		printf("%s\n",sqlite3_errmsg(db));
+		return -1;
+	}
+	sqlite3_exec(db, "insert into student values('lisi',21);",NULL,NULL,NULL);  //将信息插入到数据表中。 
+	sqlite3_exec(db,"select * from grade;", callback, NULL, NULL);      // 查询记录。 
+	sqlite3_close(db);       // 关闭数据库。 
+}
+
+//练习： 用 c 实现使用sql语句。 
+1. 创建学生数据表。 字段分别是： 学号、姓名、年龄，性别。 
+2. 输入编号，姓名，年龄，性别，插入到stu_info 中。 
+3. 再输入一个年龄，删除 > 此年龄的学生 
+4. 输出数据表中的信息
+
+参考代码： 
+///////////////
+#include <stdio.h>
+#include <sqlite3.h>
+int callback(void *p, int column, char **value, char **name)    // 回调函数  
+{
+	int i;
+	printf("**************************\n");
+	for(i=0; i<column; i++)
+	{
+		printf("%9s : %9s\n",name[i], value[i]);
+	}
+	return 0;
+}
+int main()
+{
+	sqlite3 *db;
+	if(sqlite3_open("./a.db", &db) != SQLITE_OK)    // 打开数据库。 
+	{
+		printf("%s\n",sqlite3_errmsg(db));
+		return -1;
+	}
+
+	char *errmsg;
+	int n = sqlite3_exec(db, "create table stu_info(number integer, name varchar[20],age integer, sex[10])",NULL,NULL,&errmsg);   // 创建数据表。 
+	if(n != 0)
+	{
+		printf("%s \n",errmsg);
+		return -1;
+	}
+	sqlite3_exec(db, "insert into stu_info values(1001,'zhangsan',20,'male');",NULL,NULL,NULL);
+	sqlite3_exec(db, "insert into stu_info values(1002,'zhangsa',22,'male');",NULL,NULL,NULL);      // 插入数据。 
+	sqlite3_exec(db, "insert into stu_info values(1003,'zhangs',24,'female');",NULL,NULL,NULL);
+	sqlite3_exec(db, "insert into stu_info values(1004,'zhang',21,'female');",NULL,NULL,NULL);
+
+	char sql[128] = {0};
+	int age; 
+	puts("Input age: ");
+	scanf("%d",&age);
+	sprintf(sql,"delete from stu_info where age > %d;",age);     // 删除符合条件的数据。 
+	sqlite3_exec(db, sql, NULL, NULL, NULL);
+
+	sqlite3_exec(db,"select * from stu_info;", callback, NULL, &errmsg);   // 查询表中所有内容。 
+	sqlite3_close(db);
+	return 0;
+}
+
+
+5. 执行 sql 语句的编程接口之二       sqlite3_get_table 
+
+函数原型： int sqlite3_get_table(sqlite3 *db, const  char  *sql,  char ***resultp,  int*nrow,  int *ncolumn, char **errmsg);
+功能：执行SQL操作
+
+参数：     db：    数据库句柄
+		   sql：   SQL语句
+           resultp：用来指向sql执行结果的指针
+           nrow：满足条件的记录的数目
+           ncolumn：每条记录包含的字段数目
+           errmsg：错误信息指针的地址
+返回值：成功返回0，失败返回错误码
+
+示例代码： 
+///////////////////
+#include <stdio.h>
+#include <sqlite3.h>
+int main()
+{
+	sqlite3 *db;
+	if(sqlite3_open("./a.db", &db) != SQLITE_OK)
+	{
+		printf("%s\n",sqlite3_errmsg(db));
+		return -1;
+	}
+	char *errmsg;              // 如果执行sql 语句的操作没有成功，则该指针，会指向 报错的字符串。输出该字符串即可。 
+	int n = sqlite3_exec(db, "create table stu_info(number integer, name varchar[20],age integer, sex[10])",NULL,NULL,&errmsg);
+	if(n != 0)
+	{
+		printf("%s \n",errmsg);
+		return -1;
+	}
+	sqlite3_exec(db, "insert into stu_info values(1001,'zhangsan',20,'male');",NULL,NULL,NULL);
+	sqlite3_exec(db, "insert into stu_info values(1002,'zhangsa',22,'male');",NULL,NULL,NULL);
+	sqlite3_exec(db, "insert into stu_info values(1003,'zhangs',24,'female');",NULL,NULL,NULL);
+	sqlite3_exec(db, "insert into stu_info values(1004,'zhang',21,'female');",NULL,NULL,NULL);
+
+	char sql[128] = {0};
+	int age; 
+	scanf("%d",&age);
+	sprintf(sql,"delete from stu_info where age > %d;",age);     // 整合字符串 成 一个新的 sql 语句。 
+	sqlite3_exec(db, sql, NULL, NULL, NULL);
+	
+	char **resultp;      // 该指针指向 数据表（指向结果的指针。）
+	int row,column;      // 行、列。 
+	sqlite3_get_table(db, "select * from stu_info;", &resultp, &row, &column, &errmsg );  // 参数 3 4 5 6 ，在sqlite3_get_table 执行时，获得结果。 
+	int i,j,index = column;
+	for(i=0; i<row; i++)      // 第 i 条数据。 
+	{
+		printf("**************************\n");
+		for(j=0; j< column; j++)   // 第 j 个字段。 
+		{
+			printf("%9s : %9s\n",resultp[j],resultp[index++]);  // 输出： 字段名称、 字段的值。 
+		}
+	}
+	sqlite3_close(db);
+	return 0;
+}
+
+
+
+
+二、  实践 ： 
+1 服务器端
+    1)创建数据库，
+      表1   用户数据表： 用户名，密码
+      表2   历史信息表： 用户名，历史单词 
+    2)登录注册功能
+    3)用tcp  + 并发服务器 实现
+	4)满足用户查历史的功能 
+
+2 客户端
+  1)注册、登录功能
+  2)查单词功能
+  3)查历史记录
+
+
+
+

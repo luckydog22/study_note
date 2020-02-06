@@ -1,0 +1,103 @@
+#include "teacher.h"
+#include "stu.h"
+
+int main()
+{
+	Teacher t;
+	Student* p =t.randHappyBoy();
+	t.hehe(p);
+	t.show();
+
+}
+stu.cpp
+#include "stu.h"
+#include<iostream>
+
+using namespace std;
+
+Student::Student(string name,int score):name(name),score(score){
+
+}
+
+void Student::setScore(int score)
+{
+	this->score = score;
+}
+void Student::show()
+{
+	cout<<name<<" "<<score<<endl;
+}
+
+stu.h
+#ifndef STU_H
+#define STU_H
+#include<string>
+
+using namespace std;
+
+class Student
+{
+private:
+	string name;
+	int score;
+public:
+	Student(string name,int score);
+	void setScore(int score);
+	void show();
+};
+
+#endif
+
+teacher.cpp
+#include "teacher.h"
+#include<cstdlib>
+#include<ctime>
+
+
+Teacher::Teacher()
+{
+	//创建五个学生对象
+	students[0] = new Student("小雨",98);
+
+	students[1] = new Student("中雨",23);
+	students[2] = new Student("大雨",45);
+
+	students[3] = new Student("暴雨",87);
+	students[4] = new Student("雷阵雨",80);
+
+	srand(time(0));
+}
+
+Student* Teacher::randHappyBoy()
+{
+		return students[rand()%5];
+}
+void Teacher::hehe(Student* p)
+{
+	p->setScore(0);
+}
+
+void Teacher::show()
+{
+	for(int i = 0 ; i < 5; i++)
+		students[i]->show();
+}
+
+teacher.h
+#ifndef TEACHER_H
+#define TEACHER_H
+#include "stu.h"
+
+class Teacher
+{
+private:
+	Student* students[5];
+public:
+	Teacher();
+	Student* randHappyBoy();
+	void hehe(Student* p);
+	void show();
+
+};
+
+#endif

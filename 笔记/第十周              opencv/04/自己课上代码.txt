@@ -1,0 +1,375 @@
+///////////////////////////////////////////////膨胀
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+Mat src ;
+int pro = 3;
+int max1 = 50;
+
+void fun1(int ,void *)
+{
+    //创建空的Mat对象保存改后的图片
+    Mat dst = Mat::zeros(src.size(),src.type());
+
+    //创建覆盖区域
+    Mat  str = getStructuringElement( MORPH_RECT,Size(pro+1,pro+1),Point(-1,-1  ));
+    //参数一：改的区域形状
+    //参数二：区域大小（宽高）
+    //参数三：像素中心点
+
+    //进行膨胀（数字变大）
+    dilate(src,dst,str);
+    //参数一：原图
+    //参数二：存储改口图片的空对象
+    //参数三：覆盖区域
+
+    imshow("win1",dst);
+}
+
+int main(int argc, char *argv[])
+{
+    src = imread("lover.jpg");
+
+    if(!src.data)
+    {
+        cout<<"src error"<<endl;
+    }
+
+    namedWindow("win1",CV_WINDOW_AUTOSIZE);
+
+    imshow("win1",src);
+
+    createTrackbar( "bar","win1",&pro,max1,fun1  );
+
+    waitKey(0);
+
+    return -1;
+}
+///////////////////////////////////////////利用进度条进行膨胀
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+
+int pro = 3;
+int max1 = 50;
+int s =1;
+
+void fun1(int ,void *)
+{
+    s = pro +1;
+
+}
+
+
+int main(int argc, char *argv[])
+{
+
+    VideoCapture v(0);
+
+    //1.创建级联器
+    CascadeClassifier c;
+
+    //2.加载xml文件
+    if( !c.load("haarcascade_frontalface_alt.xml") )
+    {
+        cout<<"load false"<<endl;
+    }
+
+    //定义按键  便于退出
+    char key;
+    Mat dst1;
+    namedWindow("win1",CV_WINDOW_AUTOSIZE);
+
+    while(v.read(src))
+    {
+        imshow("win1",src);
+
+
+        //3.直方图均衡化（1.定义一个和原图一样的mat对象，2.改为单通道  3.均衡化）
+        Mat dst = Mat::zeros(src.size(),src.type());
+        cvtColor(src,dst,CV_BGR2GRAY);
+        equalizeHist(dst,dst);
+        //参数一：原图
+        //参数二：改后图
+
+        //4.人脸识别（1.定义一个vector容器  2.进行人脸识别）
+        vector<Rect>faces;
+        c.detectMultiScale(  dst,faces,1.1,3,0,Size(100,100),Size(200,200)      );
+        //参数一：经过处理的单通道图片，
+        //参数二：容器
+        //参数三：每次检测放大的比例
+        //参数四：每侧检测的最小范围
+        //参数四：0
+        //参数五：每次检测的框大小，
+        //参数六：检测的整体范围
+
+        cout<<faces.size()<<endl;
+
+        //下面的操作就是对脸部画红色框 并进行各种操作
+        for(int i = 0;i<faces.size();i++)
+        {
+            //1.画框
+            rectangle(src,faces[i],Scalar(0,0,255),2,LINE_8,0);
+            //2.将渠道的图片拿出来
+            dst1 = src(Rect(faces[i].x,faces[i].y,faces[i].width,faces[i].height ));
+
+            //膨胀
+            Mat str = getStructuringElement(MORPH_RECT,Size(pro+1,pro+1),Point(-1,-1));
+            dilate(image,image,str);
+            
+            image.copyto(src(Rect(faces[i].x,faces[i].y,faces[i])  ));
+
+            imshow("win1",dst4);
+
+        }
+
+        imshow("win1",src);
+        createTrackbar( "bar","win1",&pro,max1,fun1  );
+        //参数一：进度条名字
+        //参数二：窗口名字
+        //参数三：最小值地址
+        //参数四：最大值名字
+        //参数五：回调函数
+
+
+        key =  waitKey(30);
+
+        if(key == 27)
+            break;
+
+    }
+
+
+
+}
+
+/////////////////////////////////////////////开操作
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+
+int main(int argc, char *argv[])
+{
+    Mat src  = imread("lover.jpg");
+
+    namedWindow("win1",CV_WINDOW_AUTOSIZE);
+
+    imshow("win1",src);
+
+    Mat dst = Mat::zeros(src.size(),src.type());
+    
+  
+    //建立覆盖区域（单位扫描框，）
+    Mat str = getStructuringElement(MORPH_RECT,Size(11,11),Point(-1,-1)  );
+    //参数一：形状
+    //参数二：大小
+    //参数三：中心像素点
+
+    //开操作：先腐蚀后膨胀
+    morphologyEx(src,dst,CV_MOP_OPEN,str);
+
+
+    namedWindow("win2",CV_WINDOW_AUTOSIZE);
+
+    imshow("win2",dst);
+
+    waitKey(0);
+    return 0;
+
+
+}
+//////////////////////////////////////二值化取线条
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+
+int main(int argc, char *argv[])
+{
+    Mat src  = imread("line.jpg");
+
+    if(!src.data)
+    {
+        cout<<"src error"<<endl;
+        return -1;
+    }
+
+    namedWindow("win1",CV_WINDOW_AUTOSIZE);
+
+    imshow("win1",src);
+
+    Mat dst = Mat::zeros(src.size(),src.type());
+
+   cvtColor(src,dst,CV_BGR2GRAY);
+
+   namedWindow("dstWin",CV_WINDOW_AUTOSIZE);
+
+   imshow("dstWin",dst);
+
+   Mat dst1 = Mat::zeros(dst.size(),dst.type() );
+
+   adaptiveThreshold(~dst,dst1,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY,3,0  );
+   //参数一：原图像的反向图像（必须是八位单通道的图像）
+   //参数二：转后图像
+   //参数三：最大值
+   //参数四：自适应阈值的方法
+   //参数五：阈值类型
+   //参数六：连续像素个数 应该是奇数
+   //参数七：随便
+
+   namedWindow("dst1Win",CV_WINDOW_AUTOSIZE);
+
+   imshow("dst1Win",dst1);
+
+
+   Mat dst2 = Mat::zeros(dst1.size(),dst1.type());
+
+   Mat str = getStructuringElement(MORPH_RECT,Size(10,1),Point(-1,-1)  );
+
+   erode(dst1,dst2,str);
+
+   namedWindow("dst2Win",CV_WINDOW_AUTOSIZE);
+
+   imshow("dst2Win",dst2);
+
+   Mat dst3 = Mat::zeros(dst2.size(),dst2.type());
+
+   dilate(dst2,dst3,str);
+
+   namedWindow("dst3",CV_WINDOW_AUTOSIZE);
+
+   imshow("dst3",dst3);
+
+    waitKey(0);
+    return 0;
+
+
+}
+
+////////////////////////////////////////////获得并且存储人脸图像
+//    // 创建多媒体对象
+//    VideoCapture v(0);
+//    Mat src;
+
+//    namedWindow("win1",CV_WINDOW_AUTOSIZE);
+//    char key = 0;
+
+//    //1.创建级联器
+//    CascadeClassifier c;
+
+//    //2.加载xml文件
+//    if(!c.load("haarcascade_frontalface_alt.xml"))
+//    {
+//        cout<<"xml error"<<endl;
+//        return -1;
+//    }
+
+//    Mat image;
+//    Mat image1;
+//    int count = 0;
+
+//    //开始读取视频
+//    while(v.read(src))
+//    {
+//        //3.直方图均衡化（1.创建空的）
+//        Mat dst = Mat::zeros(src.size(),src.type());
+//        cvtColor(src,dst,CV_BGR2GRAY);
+//        equalizeHist(dst,dst);
+
+//        //4.人脸识别
+//        vector<Rect> faces;
+//        c.detectMultiScale(dst,faces,1.1,3,0,Size(50,50),Size(200,200));
+//        cout<<"face num:  "<<faces.size()<<endl;
+
+//        //以下就是给原图加框
+//        for(int i = 0;i<faces.size();i++)
+//        {
+//            //1.加框
+//            rectangle(src,faces[i],Scalar(0,0,255),2,LINE_8,0  );
+//            //2.把抠出来的图片  进行各种操作
+//            image = src(Rect(faces[i].x,  faces[i].y,faces[i].width,faces[i].height  ));
+
+//           // 图片统一规格
+//            resize(image,image1,Size(100,100));
+
+//            //保存
+//            imwrite(format("ff%d.jpg",count++),image1);
+
+//        }
+
+//        imshow("win1",src);
+
+//        key = waitKey(30);
+
+//        if(key == 27)
+//            break;
+
+//    }
+
+
+///////////////////////////////////////////////////读取文件
+   //第一步
+    string filename = "test.csv";
+    //创建读文件的流
+    ifstream file(filename.c_str());
+
+    //第二步
+    //判断读取是否成功
+    if(file ==NULL)
+    {
+        cout<<"file error"<<endl;
+        return -1;
+    }
+
+    //定义存内容的string
+    string path;
+    string label;
+
+    vector<Mat> images;
+    vector<int> labels;
+
+    //第三步
+    //开始读取
+    while(getline(file,line))
+    {
+        stringstream line1(line);
+        getline(line1,path,';');
+        //参数一：（流）
+        //参数二：放入另一个字符串
+        //参数三：结束标志
+        getline(line1,label);
+
+        //第四步
+        if(!path.empty() && (!label.empty()) )
+        {
+            images.push_back(imread(path,0));
+            labels.push_back(atoi(label.c_str()));
+        }
+    }
+    cout<<"images  "<<images.size()<<endl;
+    cout<<"labels:   "<<labels.size()<<endl;
+
+    waitKey(0);

@@ -1,0 +1,330 @@
+day1
+******************************
+练习：输入一个字符 如果是大写 则转为小写 如果是小写则转为大写
+
+#include <iostream>
+
+int main()
+{
+	char c;
+	cout<<"please input a char:"<<endl;
+	std::cin>>c;
+	if(c>='a'&&c<='z')
+	{
+		c -= 32;
+	}
+	else if(c>='A'&&c<='Z')
+	{
+		c += 32;
+	}
+	std::cout<<c<<std::endl;
+}
+注意：
+std::cout<<c+32<<std::endl;  会输出int类型  如果想用 就给强转成char类型
+std::cout<<char（c+32）<<std::endl;
+
+练习：分别在teacher和worker命名空间中添加函数来输出name
+
+#include <iostream>
+
+using namespace std;
+
+namespace teacher
+{
+	char name[] = "dashen";
+
+	void showName()
+	{
+		cout<<name<<endl;//默认使用当前命名空间
+	}
+}
+
+namespace worker
+{
+	char name[] = "daye";
+	void showName()
+	{
+		cout<<name<<endl;
+	}
+}
+
+using namespace teacher;
+using namespace worker;
+
+int main()
+{
+	teacher::showName();
+	worker::showName();
+}
+
+
+2.自己写命名空间
+示例1：
+#include <iostream>
+
+using namespace std;
+
+namespace teacher
+{
+	char name[] = "dashen";
+}
+
+using namespace teacher;
+//using teacher::name;
+
+int main()
+{
+	cout<<"老师是"<<name<<endl;
+}
+示例2：
+#include <iostream>
+
+using namespace std;
+
+namespace teacher
+{
+	char name[] = "dashen";
+}
+
+namespace worker
+{
+	char name[] = "daye";
+	int age = 68;
+}
+
+using namespace teacher;
+using namespace worker;
+
+int main()
+{
+	cout<<"老师是"<<name<<endl;//编译错误
+	cout<<teacher::name<<" and "<<worker::name<<endl;//正确用法 
+	////有歧义时 需要加作用域限定符 名字冲突的情况下仍然要在使用前添加命名空间
+}
+
+练习：分别在teacher和worker命名空间中添加函数来输出name
+
+#include <iostream>
+
+using namespace std;
+
+namespace teacher
+{
+	char name[] = "dashen";
+
+	void showName()
+	{
+		cout<<name<<endl;//默认使用当前命名空间
+	}
+}
+
+namespace worker
+{
+	char name[] = "daye";
+	void showName()
+	{
+		cout<<name<<endl;
+	}
+}
+
+using namespace teacher;
+using namespace worker;
+
+int main()
+{
+	teacher::showName();
+	worker::showName();
+}
+
+示例3：
+#include <iostream>
+
+using namespace std;
+
+namespace teacher
+{
+	char name[] = "dashen";
+	int age = 19;
+}
+
+namespace worker
+{
+	char name[] = "daye";
+	int weight = 180;
+}
+
+using namespace teacher;
+using namespace worker;
+
+char name[] = "dashu";
+
+int main()
+{
+	cout<<teacher::name<<"age = "<<age<<endl;
+	cout<<worker::name<<"weight = "<<weight<<endl;
+	cout<<::name<<endl;//C++会将没有命名空间的冲突声明放入匿名命名空间  
+	
+	//匿名域  匿名命名空间    当命名空间有冲突时，才加::
+	
+	//自己开发的时候 给自己的模块加上域  以防和别人冲突
+	
+	
+}
+
+
+
+
+练习：随机点名
+
+#include <iostream>
+#include <string>
+#include <cstdlib>
+
+using namespace std;
+
+int main()
+{
+	srand(time(0));
+	string names[] = {
+		"曹晨曦",
+		"韩紫薇",
+		"史晓蕾",
+		"张成旺",
+		"卜庆超",
+		"白祥",
+		"李鑫宇",
+		"胡亚男",
+		"韩瑜",
+		"刘洋",
+		"王栋",
+		"庄展博",
+		"焦世奇",
+		"贾红迪",
+		"沈万龙",
+		"宋绩浩",
+		"关紫璇",
+		"白秀",
+		"胡佳朋",
+		"陈永康",
+		"卢伟浩",
+		"李浩然",
+		"翁兴涛",
+		"马宝峰",
+		"李培",
+		"陈翔翱"
+	};
+	int index = rand()%26;
+	cout<<names[index]<<endl;
+}
+
+练习：输入一个字符串，将其中的大写字母转换为小写字母
+
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+
+int main()
+{
+	string s;
+	getline(cin, s);
+	cout<<s<<endl;
+	
+	for(int i = 0;i < s.size();i++)
+	{
+		if(s[i]>='A' && s[i]<='Z')
+		{
+			s[i]+=32;
+		}
+	}
+	
+	cout<<s<<endl;
+}
+
+//练习：键盘输入学生人数studentNum 需要将每个学生信息(姓名 学号)输入计算机保存 
+然后输入某一学生姓名查找其相关数据 
+如果输入姓名后  找到 则输出学生信息 没找到 则输出“查无此人”
+
+#include <iostream>
+#include <string>
+#include <cstdio>
+
+using namespace std;
+
+struct student
+{
+	string name;
+	string num;
+};
+
+void inputStudentInfo(student* s, int studentNum);
+int searchStudent(student* s,int studentNUm, string searchName);
+
+int main()
+{
+	student students[100];
+	int studentNum;
+	cin>>studentNum;
+	getchar();//清理\n
+
+	inputStudentInfo(students, studentNum);
+
+	string searchName;
+	cout<<"请输入查找的名字"<<endl;
+	getline(cin, searchName);
+	int result = searchStudent(students, studentNum, searchName);
+	if(result == -1)
+	{
+		cout<<"查无此人"<<endl;
+	}
+	else
+	{
+		cout<<students[result].name<<" "<<students[result].num<<endl;
+	}
+}
+
+void inputStudentInfo(student* s, int studentNum)
+{
+	for(int i = 0;i < studentNum;i++)
+	{
+		cout<<"请输入名字"<<endl;
+		getline(cin, s[i].name);
+		cout<<"请输入学号"<<endl;
+		getline(cin, s[i].num);
+	}
+}
+
+int searchStudent(student* s,int studentNum, string searchName)
+{
+	for(int i = 0;i < studentNum;i++)
+	{
+		if(s[i].name == searchName)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+//练习：编写函数swap实现main中两个整数交换 要求：形参用引用
+
+#include <iostream>
+
+using namespace std;
+
+void swap(int& a, int& b);
+
+int main()
+{
+	int a = 10, b = 20;
+	swap(a, b);
+	cout<<a<<" "<<b<<endl;
+}
+void swap(int &a,int &b)
+{
+	int tmp;
+	tmp = a;
+	a = b;
+	b = tmp;
+}

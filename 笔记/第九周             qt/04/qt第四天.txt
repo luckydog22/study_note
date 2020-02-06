@@ -1,0 +1,305 @@
+
+paf1->setShortcut(QString("Ctrl+a"));
+
+    QAction *paf2 =  new QAction(QIcon(":/heads/head18.jpg"),"file2",this);
+
+    paf2->setShortcut(QKeySequence(QString("ctrl+b")));
+
+    connect(paf2,SIGNAL(triggered()),this,SLOT(slot_file2()));
+
+    QAction *paf3 =  new QAction(QIcon(":/heads/head22.jpg"),"file3",this);
+    paf3->setShortcut(QKeySequence::Close);
+
+一、文件
+
+1.创建文件夹 头文件 #include <QDir>
+	1）给定指定路径
+	2）/如果目标目录文件夹不存在，则创建目录
+	3）读取目标目录下的所有文件，显示到列表中
+注意：下标是从2开始，前两项为"."   ".."
+
+示例：
+	 //1.指定文件夹名字
+    QString path = "d:/wd/";
+    //2.创建目录 包含头文件 #include <QDir>
+    QDir dir(path);
+    if(!dir.exists())//如果目录不存在的话，则创建
+    {
+        dir.mkpath(path);
+    }
+
+    //列取文件目录下的文件名称 1.放到QStringList中
+						   //  2.注意：遍历要从2开始，前两项为. ..
+
+    QStringList  fileList = dir.entryList();//返回的是当前目录下所有的文件名
+    for(int i = 2; i<fileList.size(); i++)
+    {
+        //文件名添加到listwight中显示 addItem()
+        ui->listWidget->addItem(fileList.at(i));//列表中的每一项是fileList.at(i)
+    }
+    qDebug()<<fileList.at(0)<<"  "<<fileList.at(1);
+	
+
+2、QFile读写文本文件
+包含头文件 #include <QFile>
+
+1)创建对象QFile(const QString &name);
+
+2)打开文件bool open(OpenMode flags);   
+   ReadOnly WriteOnly 
+   ReadWrite Append 
+   Truncate（清空）
+   
+  // file.open(QIODevice::ReadWrite)
+   QIODevice 输入输出驱动 
+	QFile行 写QIODevice也行 QFile继承于QIODevice
+
+3)写文件qint64 write(const char *data, qint64 len);
+4)读文件qint64 read(char *data, qint64 maxlen);
+
+写入eg：
+//创建一个文本
+    QFile file("hello.txt");
+    if(file.open(QFile::ReadWrite))//读写权限
+    {
+        //打开成功的话
+        QString f = ui->lineEdit->text();
+        //转成c++字符串 f.toStdString()
+        //转成c语言字符数组 f.toStdString().c_str()
+
+        //第一个参数：写入文本的内容  第二个参数：写入文本的长度
+        int len = file.write(f.toStdString().c_str(),f.size());
+        ui->label->setText(QString("写入了 %1 个字节").arg(len));
+    }
+	
+ 
+读取eg：
+  QFile file("hello.txt");
+    if(file.open(QFile::ReadOnly))
+    {
+        //读取出来的内容放到buf中
+        char buf[1024];
+       int len = file.read(buf,1024);//1k
+        QString d(buf);
+        ui->label->setText(QString("读取了 %1 个字节").arg(len)+d);
+    }
+
+
+说明：读取需要数组 返回值为实际读了多少 
+
+
+
+2、QTextStream读写文本文件
+
+字符流和字节流两种
+字符流用来读文本文件人能看懂的东西
+音频文件用字节流 字节流是无敌的 二进制文件 二进制流
+读文本还是用字符流比较好 
+
+1.创建对象explicit QTextStream(QIODevice *device);
+
+给文件名qstring 直接读 或者给
+2.读文件QTextStream &operator>>(QString &s);
+3.写文件QTextStream &operator<<(const QString &s);
+
+以内存为中心 从内存往文件走 写 相反是读
+
+写文件：
+ QFile file("hello.txt");
+    if(file.open(QFile::WriteOnly|QFile::Truncate))
+    {
+        QTextStream out(&file);
+        out<<ui->lineEdit->text()<<endl;
+    }
+    file.close();
+	
+	out<<ui->lineEdit->text()<<qSetFieldWidth(10)<<right<<90<<endl;
+//qSetFieldWidth(10) 给十个位子 相当于%10d printf（%10d）
+// right 右对齐  aa          90
+
+读文件：
+ QFile file("hello.txt");
+    if(file.open(QIODevice::ReadOnly))
+    {
+        QTextStream in(&file);
+        QString data;
+        in>>data;//读取第一个字符串时遇到空白就停止了
+
+        QString data2;
+        in>>data2;
+        data+= data2;
+        ui->label->setText(data);
+
+    }
+循环：
+QFile file("hello.txt");
+        if(file.open(QIODevice::ReadOnly))
+        {
+            QTextStream in(&file);
+            while(!in.atEnd())//arend（）  结尾
+            {
+                QString data;
+                in>>data;//读取第一个字符串时遇到空白就停止了
+            }
+        }
+		
+4.格式化函数
+	qSetFieldWidth(int width)	设置字段宽度
+	qSetPadChar(QChar ch)		设置填充字符
+	qSetRealNumberPercision(int precision)	设置实数精度
+5.流操作符
+	bin	设置读写的整数为二进制
+	oct	设置读写的整数为八进制
+	dec	设置读写的整数为十进制
+	hex 设置读写的整数为十六进制
+	showbase	强制显示进制前缀
+	forcesign	强制显示符号 + -
+	forcepoint	强制显示小数点
+	noshowbase	不显示进制前缀
+	noforcesign	不显示符号
+	left	居左
+	right	居右
+	center	居中
+	endl	换行
+	flush	清理缓存
+	
+3、QDataStream 读写二进制文件
+1.创建对象	explicit QDataStream(QIODevice *);
+2.读文件	QDataStream &operator>>(char *&str);
+3.写文件	QDataStream &operator<<(const char *str);
+
+写入文件：
+ QFile file("hello.txt");
+    if(file.open(QFile::WriteOnly|QFile::Truncate))
+    {
+        QDataStream out(&file);
+        out<<ui->lineEdit->text();
+    }
+    file.close();
+读文件：这个例子不具备典型性，只是为了说明 也可以用Qstring来读，
+ QFile file("hello.txt");
+    if(file.open(QFile::ReadOnly))
+    {
+        QDataStream in(&file);
+        QString data;
+        in>>data;
+    }
+    file.close();
+
+//二进制 复制音频文件
+
+#define MAX_LEN 1024*1024
+
+void MainWindow::on_pushButton_copy_clicked()
+{
+    QFile src("d:/farsight/music/src.mp3");
+    QFile dst("c:/Users/wd/Desktop/dst.mp3");
+    if(src.open(QIODevice::ReadOnly) && dst.open(QIODevice::WriteOnly))
+    {
+        QDataStream in(&src);
+        QDataStream out(&dst);
+        char buf[MAX_LEN];
+        while(!in.atEnd())
+        {
+            int size = in.readRawData(buf, MAX_LEN);
+            if(size == -1)
+            {
+                qDebug()<<"读取失败";
+                break;
+            }
+            out.writeRawData(buf, size);
+        }
+        qDebug()<<"完成";
+    }
+    src.close();
+    dst.close();
+
+
+
+二、数据库
+
+示例：DBDemo
+
+1、添加qt支持库
+	1）QT       += sql
+	2）包含的头文件 #include<QSqlDatabase>//数据库
+					#include<QSqlError>//数据库错误信息类
+					#include<QSqlQuery>//操作数据库 执行语句
+
+2、连接并打开数据库
+	QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");//加载驱动
+	db.setDatabaseName("testdb.db");//数据库名   sqlite数据库是数据库文件	
+	db.open();//打开数据库
+	
+	db.close();//关闭数据库  在全部操作完成后执行
+	
+	
+3、QSqlQuery类数据库操作
+
+1.直接执行sql语句
+bool exec(const QString& query);//参数是sql语句
+
+bool sucess = query.exec("create table stu_info(name varchar(20),age varchar(20),gender varchar(20))");
+
+2.执行带参数sql语句
+bool prepare(const QString& query);//参数是sql语句
+void bindValue(int pos, const QVariant& val, QSql::ParamType type = QSql::In);//给每个参数赋值
+bool exec();//执行sql语句
+
+示例：插入数据
+
+  QSqlQuery query;
+   bool sucess = query.exec("create table stu_info(name varchar(20),age varchar(20),gender varchar(20))");
+
+   query.prepare("insert into stu_info(name,age,gender) values(:name,:age,:gender)");
+
+   query.bindValue(":name",ui->lineEdit_name->text());
+   query.bindValue(":age",ui->lineEdit_age->text());
+    query.bindValue(":gender","man");
+    query.exec();
+
+
+示例：查询数据
+    bool ok = db.open();
+    QString name,age,gender,str;
+    QSqlQuery query;
+    query.exec("select *from stu_info");
+    while(query.next())//每调一次 指向与其相邻的下一条记录
+    {
+        name = query.value(0).toString();	//0表示第一个字段  name
+        age = query.value(1).toString();	//1表示第二个字段 age
+        gender = query.value(2).toString();
+        str = name+" "+age+" "+gender;
+         ui->textEdit_show->append(str);
+    }
+
+    db.close();
+
+示例： 更新数据
+  db.open();
+    QSqlQuery query;
+    query.prepare("update stu_info set name = ?,age = ?,gender = ? where name = ?");
+    query.bindValue(0,"aaaaaa");
+    query.bindValue(1,"11111111");
+    query.bindValue(2,"shou");
+    query.bindValue(3,"dd");
+    query.exec();
+    db.close();
+
+示例：删除数据
+db.open();
+    QSqlQuery query;
+    query.prepare("delete from stu_info where name = ?");
+    query.bindValue(0,"aa");
+
+    query.exec();
+    db.close();
+
+
+
+综合练习：学生分数管理系统  
+示例：StudentSystem
+
+
+
+	 

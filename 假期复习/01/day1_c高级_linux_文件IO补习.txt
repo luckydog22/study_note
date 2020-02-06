@@ -1,0 +1,252 @@
+一、C高级复习
+[习题1]
+下面两个变量定义, 分析p的类型, sizeof(p) 是多少  (3分钟思考时间)
+1) int *p[3];		//p  整形指针数组，3各元素 每个元素 int *, sizeof(p) 12 
+			//  | int * | int * | int * |		
+2) int (*p)[3];		//p 是指针, sizeof(p)  4
+
+讲解:
+1)先看优先级( [] 优先级高于*, 所以p是数组, 前面是int *, 所以整形指针数组)
+2)   ( ) 优先级最高,所以 p是指针, 什么指针 指向  int [3]的指针
+
+扩展练习:
+1) 有如下数组, 写一个函数, 分别输出各字符串      (5-10分钟)
+char *s[] = {"yang", "li", "liu", "wang", "zhang"};
+s  数组,  字符指针数组, 元素个数，编译器自动分析出来的
+sizeof(s) --->  20
+
+#include <stdio.h>
+void print_s(char *p[], int n)
+{
+	int i;
+	for(i = 0; i < n; i++)	//这不可以写sizeof(p) / sizeof(p[0])
+	{
+		printf("%s\n", p[i]);
+	}
+}
+int main()
+{
+	char *s[] = {"yang", "li", "liu", "wang", "zhang"};
+	print_s(s, sizeof(s) / sizeof(sizeof(s[0])));	//参数   数组s 和元素个数
+}
+//sizeof(s) 20,  s[0] 的类型是char *  sizeof(s[0]) -->5
+//yang\n,   li\n ....
+//如果输出sizeof(s)  , printf("%d\n", sizeof(s));
+
+2) 有如下数组，写一个函数，输出所有值            (5-10分钟)
+int a[3][4] = {{1,2,3,4},{5,6,7,8},{9,10,11,12}};
+
+#include <stdio.h>
+void print_a(int (*p)[4], int n)	// 注意, 4不能省略
+{
+	int i, j;
+	for(i = 0; i < n; i++)
+	{
+		for(j = 0; j < 4; j++)
+		{
+			printf("%d, ", p[i][j]);	//*(p + i)[j]
+		}
+		printf("\n");
+	}
+}
+int main()
+{
+	int a[3][4] = {{1,2,3,4},{5,6,7,8},{9,10,11,12}};	
+	print_a(a, 3);
+}
+//1,2,3,4  5,6,7,8  9,10,11,12
+
+[习题2]
+下面变量定义, 分析p的类型, sizeof(p) 是多少     (2分钟思考时间)
+int (*p[4])(int, int);
+
+讲解:
+p[4]  p是数组,  * 指针数组----> 函数指针数组, 
+sizeof(p) ---> 16
+
+
+[习题4]
+看下面程序，挑错                 (3分钟)
+#include <stdio.h>
+#include <stdlib.h>
+void get_memory(int *q)
+{
+	q = malloc(10 * sizeof(int));
+}
+
+int main()
+{
+	int i;
+	int *p;
+	get_memory(p);		//p 值传递，改变不了p的值
+	for(i = 0; i < 10; i++)
+	{
+		p[i] = i;
+	}
+	for(i = 0; i < 10; i++)
+	{
+		printf("%d\n", p[i]);
+	}	
+}
+
+讲解：
+#include <stdio.h>
+#include <stdlib.h>
+void get_memory(int **q)
+{
+	*q = malloc(10 * sizeof(int));
+}
+int main()
+{
+	int i;
+	int *p;
+	get_memory(&p);		//p 值传递，改变不了p的值
+	for(i = 0; i < 10; i++)
+	{
+		p[i] = i;
+	}
+	for(i = 0; i < 10; i++)
+	{
+		printf("%d\n", p[i]);
+	}	
+}
+
+[习题6]             (5分钟)
+定义一个宏，ALIGN_DOWN, 有两个参数(x, a) 功能是找到小于x的能被a整除的最大值 
+      如:  ALIGN_DOWN(65, 4),   那么它的值是64
+#define ALIGN_DOWN(x, a) ((x) - (x) % (a))
+
+定义一个宏，ALIGN_UP, 有两个参数(x, a) 功能是找到大于x的能被a整除的最小值 
+      如:  ALIGN_UP(65, 4),   那么它的值是68
+#define ALIGN_UP(x, a) ((x) + (a) - (x) % (a))
+
+65 / 4  * 4
+(65 / 4 + 1)  * 4
+       
+二、linux复习
+[习题]  网易
+1) 设文件F1的当前引用计数值为2, 先建立F1的符号链接(软链接)文件F2, 
+	再建立F1的硬链接文件F3, 此时F2和F3的引用计数值分别是? ( A ) 
+	A  2,3   B  3,3    C  1,2     D  2,2    E  0,3
+2) 请选择以下命令后file1和file2的权限  ( B )
+	chmod 755 file1		//rwxr-xr-x  ---> 111--->7    101--->5
+	chmod 644 file2		//rw-r--r--  ---> 644
+A -rw-r--r--  file1   B -rwxr-xr-x  file1  C -rw-r--r--  file1  D -rwxr-xr-x  file1
+  -rw-r--r--  file2     -rw-r--r--  file2    -rwxr-xr-x  file2    -rw-rw-rw-  file2
+
+3) (umask 022;touch a) 等价于 (touch a; chmod XXX),请问XXX用哪个数字表示 ( A  )
+	A  644   B  755    C  022     D  700
+
+touch a ---> 666(touch 创建文本文件，对于一个文本文件，默认权限666)
+umask  文件访问权限掩码(如果没设置，666), 
+	umask如果某位为1, 那么创建文件时，此位被掩掉
+ 666 ----> 110 110 110
+ 022 ----> 000 010 010
+
+4) 假设 有个空文件file,执行如下命令：  (  D )
+	echo hello >> file;		//>> 文件输出重定向， 追加输入
+	echo world > file;		//>  清空重写
+	cat file
+	那么输出是
+ A  hello    B  hello world    C  hello    D  world
+                                  world
+gcc hello.c 2> err.txt   (2  错误输出重定向)
+
+5) 如何动态显示进程运行情况
+top (动态显示进程运行情况 cpu占用率  内存使用率)
+sleep(1);	//释放cpu资源
+usleep(1000);
+	
+6) 用什么命令可以指定查看某个进程(init)的运行信息
+ps aux | grep init (ps aux 查看进程信息  | 管道符   grep  搜索)
+
+7) 有main.c add.c  del.c三个源文件, 用什么命令可以生成一个可执行文件main
+gcc main.c add.c del.c -o main (gcc -o main main.c add.c del.c)
+
+三、文件I/O复习
+1. 标准c文件I/O与 linux文件I/O有什么区别
+主要区别: 有无缓存
+标注c文件I/O 带缓存机制的   (fopen fread fwrite fclose)
+linux文件I/O 不带缓存机制的 (open read write close)
+
+2. 请想一想学过哪些标准c 读文件函数
+fgetc  (一个字节一个字节读)   很少使用
+fgets  (一行一行读)           使用频率高
+	linux中有很多配置文件  以行为单位的，所以用fgets比较好
+fread  (可以按任意大小读文件) ftp文件下载，用fread, 效率高
+
+3. 下列哪些函数可以刷新文件缓冲区 (C D)
+    A  fopen    B fseek   C exit (程序退出自定刷新缓冲区)   D fflush (强行刷新缓冲区)
+              更改文件指针
+
+
+上午作业：
+1) 如下代码, 挑错
+	int i;
+	int *p = malloc(10);
+
+	for(i = 0; i < 10; i++)
+	{
+		p[i]= i;
+	}
+	for(i = 0; i < 10; i++)
+	{
+		printf("%d\n", p[i]);
+	}
+(1)  没free, 内存泄露
+(2)  malloc(10) 分配10字节,但是应该是10个int  malloc(10 * sizeof(int))
+					       malloc(40);
+(3)  动态内存分配可能会失败，应该检测是否分配成功
+	int i;
+	int *p = (int *)malloc(10 * sizeof(int));
+	if(p != NULL)	//(3)
+	{
+		for(i = 0; i < 10; i++)
+		{
+			p[i]= i;
+		}
+		for(i = 0; i < 10; i++)
+		{
+			printf("%d\n", p[i]);
+		}
+		free(p);
+		p = NULL; //(5)
+	}
+2) 写一个函数，完成字符串连接 
+char *my_strcat(char *dst, const char *src)	//把src连接到dst后面
+{			//*dst 会被改变，但 *src(不应该改), 目的：保证*src不被改   
+	char *p = dst;
+	while(*dst != '\0')		// 先找到dst的结束 "hello"----> '\0' 结束符
+	{
+		dst++;
+	}	//dst走到'\0'
+	while(*src != '\0')	
+	{
+		*dst = *src;	//*src = *dst 编译会出错
+		dst++;
+		src++;
+	}
+	*dst = '\0';	//有了'\0'就是一个完整的字符串
+	return p;	
+}
+
+const 关键字, 修饰常量， 放在哪儿    
+
+下午作业：
+1. 一个字符串中可能包含a-z中的多个字符，字符也可能重复，
+例如char a[] = "dfafdafdafdafadfdafjkadfdafdafiofidafefadfa";
+写一个程序，对于给定一个这样的字符串，求出字符串中出现次数最多的那个字母以及出现的次数
+（若次数最多的字母有多个，则全部求出）。
+
+2.求一个txt文件的行数
+
+3.用标准c文件I/O实现文件 copy，如：./mycp a.c b.c
+                       将a.c 内容copy到b.c中去
+
+4:
+  打开一个文件，文件不存在就创建，文件存在，读出文件内容，输出到显示器上 
+  要求: 文件名从参数中读出   ./a.out  a.c
+///////////////////////////////////////////////////////////////////////	
+
+
+

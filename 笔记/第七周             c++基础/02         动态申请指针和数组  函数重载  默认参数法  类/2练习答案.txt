@@ -1,0 +1,354 @@
+
+************************************************************************
+day2
+********************************************************************
+从键盘输入学生分数 统计出最高分 最低分 平均分 要求：空间动态开辟
+#include<iostream>
+#include<cstdlib>
+using namespace std;
+#define N 3
+int main()                                              
+{
+	int *p=new int[N];
+	if(NULL==p)
+	{
+		cout<<"malloc error"<<endl;
+		exit(-1);
+	}
+
+	cout<<"please input score:"<<endl;
+	for(int i=0;i<N;i++)
+	{
+		cin>>p[i];
+	}
+
+	int max=p[0],min=p[0],sum=p[0];
+	for(int i=1;i<N;i++)
+	{
+		if(max<p[i])
+		{
+			max = p[i];
+		}
+		else if(min>p[i])
+		{
+			min = p[i];
+		}
+		sum+=p[i];
+	}
+
+	cout<<"max:"<<max<<" min:"<<min<<" avg:"<<sum/N<<endl;
+
+}
+//练习1：重载dev函数，进行int类型和float类型的两个数相除
+
+#include <iostream>
+
+using namespace std;
+
+int dev(int num1, int num2)
+{
+	return num1/num2;
+}
+
+float dev(float num1, float num2)
+{
+	return num1/num2;
+}
+
+int main()
+{
+	cout<<dev(10, 3)<<endl;
+	cout<<dev(10.0f, 3.0f)<<endl;
+}
+
+//练习：找出两个数最大值(两个数可能是int 也可能是float)
+#include<iostream>
+using namespace std;
+
+int max(int m,int n)
+{
+	return m>n?m:n;	
+}
+float max(float m,float n)
+{
+	return m>n?m:n;	
+}
+int main()
+{
+	int a=9,b=7;
+	float x=1.23,y=6.778;
+	cout<<max(a,b)<<endl;
+	cout<<max(x,y)<<endl;
+}
+
+//练习：判断一个年份是否是闰年，声明中给默认年份2016
+
+#include<iostream>
+using namespace std;
+
+void func(int year=2016);//函数声明时 指定了默认值2016 则函数调用时 可以不指定实参
+int main()
+{
+	func();
+}
+
+void func(int year)
+{
+	if(year%4==0&&year%100!=0||year%400==0)
+	{
+		cout<<"leap year!"<<endl;
+	}
+	else 
+	{
+		cout<<"common year!"<<endl;
+	}
+}
+
+//练习： 定义一个类，定义二维数组成员，重载函数print，分别实现常规打印数组元素和以一定格式打印数组
+			init();
+0 1 2 3     print();
+1 2 3 4
+2 3 4 5
+
+0#1#2#3     print(char space);
+1#2#3#4
+2#3#4#5
+
+#include <iostream>
+
+using namespace std;
+
+class Overload
+{
+public:
+	int arr[3][4];
+	void init()
+	{
+		for(int i = 0;i < 3;i++)
+		{
+			for(int j = 0;j < 4;j++)
+			{
+				arr[i][j] = i+j;
+			}
+		}
+	}
+
+	void print()
+	{
+		print(' ');
+	}
+
+	void print(char space)
+	{
+		for(int i = 0;i < 3;i++)
+		{
+			for(int j = 0;j < 4;j++)
+			{
+				if(j < 3)
+				{
+					cout<<arr[i][j]<<space;
+				}
+				else
+				{
+					cout<<arr[i][j]<<endl;
+				}
+			}
+		}	
+	}
+};
+
+int main()
+{
+	Overload ol;
+	ol.init();
+	ol.print();
+	cout<<"-------------"<<endl;
+	ol.print('*');
+	return 0;
+}
+
+//练习：定义Dog类，有成员变量name，有成员函数setName起名，sleep睡觉，eat吃饭
+	1.setName给属性name赋值
+	2.sleep输出xxx睡觉了
+	3.eat输出xxx妈妈喊你回家吃饭了
+
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+class Dog
+{
+public:
+	string name;
+
+	void setName(string n)
+	{
+		name = n;
+	}
+
+	void sleep()
+	{
+		cout<<name<<"睡觉了"<<endl;
+	}
+
+	void eat()
+	{
+		cout<<name<<"妈妈喊你回家吃饭了"<<endl;
+	}
+};
+
+int main()
+{
+	Dog* d = new Dog;
+	d->setName("小明");
+	d->sleep();
+	d->eat();
+
+	delete d;
+}
+
+练习：自定义一个类实现栈结构，有出栈（pop）和入栈（push）功能，可以存放任意多整数
+1.成员变量指针指向数组
+2.成员变量表示数组长度
+3.成员函数pop()和push()
+4.成员变量表示栈针
+5.成员init给成员变量赋初始值
+
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+class MyStack
+{
+public:
+	int* stack;
+	int length;
+	int top;
+
+	void init()
+	{
+		top = 0;
+		length = 10;
+		stack = new int[length];
+	}
+
+	int pop()
+	{
+		top--;
+		return stack[top];
+	}
+
+	void push(int data)
+	{
+		if(top == length)//当前数组已满
+		{
+			expand();
+		}
+		stack[top++] = data;
+	}
+
+	void expand()//扩大数组
+	{
+		int newlength = length*2;
+		int* newstack = new int[newlength];
+		for(int i = 0;i < length;i++)
+		{
+			newstack[i] = stack[i];
+		}
+		delete[] stack;
+		stack = newstack;
+		length = newlength;
+	}
+};
+
+
+int main()
+{
+	MyStack* p = new MyStack;
+	p->init();
+	for(int i = 0;i < 100;i++)
+	{
+		p->push(i);
+	}
+
+	for(int i = 0;i < 100;i++)
+	{
+		cout<<p->pop()<<endl;
+	}
+}
+
+
+练习：定义链表类class Link
+1.链表节点结构体
+struct Node
+{
+		int num;
+		Node* pNext;     
+};
+2.成员指针指向链表头pHead和链表尾pTrail
+3.成员变量表示链表长度size
+4.成员函数add向链表尾部插入数据
+5.成员函数get获得指定位置的数据
+
+#include<iostream>
+#include<string>
+using namespace std;
+
+class Link
+{
+public:
+	struct Node
+	{
+		int num;
+		Node* pNext;
+	};
+	int size;
+	Node* pHead;
+	Node* pTail;
+	
+	void init()
+	{
+		size=0;
+		pHead = new Node;
+		pTail = pHead;
+	}
+	void add(int data)
+	{
+		Node* pNode = new Node;
+		pNode->num =data;
+		pTail->pNext = pNode;
+		pTail = pNode;
+		size++;
+
+	}
+	int getNode(int index)
+	{
+		Node* pNode = pHead->pNext;
+		for(int i = 0 ; i <index;i++)
+		{
+			pNode = pNode->pNext;
+		}
+		return pNode->num;
+	}
+	int getSize()
+	{
+		return size;
+	}
+};
+
+
+int main()
+{
+	Link l;
+	l.init();
+	for(int i = 0 ; i < 10; i++)
+	{
+		l.add(i);
+	}
+	for(int i = 0 ; i < l.getSize();i++)
+		cout<<l.getNode(i);
+	cout<<endl;
+	cout<<l.getNode(5)<<endl;
+}

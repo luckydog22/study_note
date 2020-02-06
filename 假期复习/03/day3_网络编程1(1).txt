@@ -1,0 +1,255 @@
+新内容：网络编程
+内容及目的：
+	1) tcp / ip 理论基础 (笔试题用)
+	2) socket 编程       (项目实践 + 笔试 + 面试)
+授课原则: 
+	尽量不用大量时间将理论，可以将理论分布在不同内容中
+学习方法：
+	tcp/ip 协议的学习参照  tcp/ip 协议详解 3卷 中的卷1
+	socket 函数可以参照 man手册
+	
+1 协议的定义(为什么要说一下协议？重点   面试)
+协议:  交互双方使用公共规则
+
+2 想2分钟，你知道哪些协议
+tcp 
+udp
+http
+I2C
+SPI
+
+3 我们要讲的协议
+tcp / ip  (协议族)   用于网络通信
+
+4 网络管理相关命令(重点)
+	1) ifconfig (查看ip地址、配置ip地址)
+		sudo ifconfig eth0 192.168.0.221  (eth0  以太网卡  192.168.0.221 ip地址)
+		配置ip地址只有管理员可以做
+		临时有效(终端关闭就无效)
+		
+	2) ping(讲解ttl的作用、画访问腾讯网站用到的一些设备)
+		ping 主要测试对方主机是否在线
+		ping www.qq.com
+		ttl=55 (通过ttl可以计算出经过的路由个数)
+		初始值64---> 每经过一个路由 值-1
+		64 - 55 = 9 路由
+		ping www.baidu.com 
+		ttl=54  
+		64 - 54 = 10 路由
+		ttl初值可以是256 ---> 128 ---> 64
+		交换机(只在局域网内有效)
+		路由器(internet网，用于两个网络之间通信)
+			两个网口(1 连接内部主机   2 连接外部主机)
+
+	3) nc (nc是netcat的简写，有着网络界的瑞士军刀美誉)
+		如果没有安装的话( apt-get install netcat)
+		主要功能是网络测试(测试端口使用情况，测试网络)
+		启动tcp服务器端
+			nc -l 8888
+		启动tcp客户端
+			nc 127.0.0.1 8888  (要写服务器的ip地址)
+			127.0.0.1  (环回地址  专门用来做网络程序测试用的  自发自收)
+
+		启动udp接收端
+			sudo nc -ul 9999
+		启动udp发送端
+			nc -u 127.0.0.1 9999
+
+	4) netstat
+		netstat -a | grep 8888  //查看某个端口是不是被占用      
+		netstat -s		//查看网络数据包收发情况
+		netstat -i		//查看网卡mtu等信息(MTU 代表一包网络数据最大值(字节))
+
+上午作业: 测试ping、nc、netstat命令的使用
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+OSI 7层模型(ISO 设计的一个网络通信的协议)
+5 tcp/ip 协议模型及代表协议 (重点)
+
+6 协议分层的好处(画图不同介质之间使用tcp/ip协议)
+	可以实现(多个不同网络看到相同的数据)
+7 重要协议
+	http (文本传输协议  当我们访问网页时使用的是http协议)  https 动态网页数据传输
+	ftp  (文件传输协议  专门用于文件传输)
+	dhcp (自动ip地址分配协议   网络中要有一个dhcp服务器(路由器))
+	dns  (实现了域名到ip地址的解析)    ip地址    域名(www.qq.com)
+		实际网络之间通信用的是ip地址
+		dns服务器记录了常用的ip地址和域名的对应关系
+	icmp (ping 命令通过icmp协议发送出去的、装载错误报文信息)
+	
+8 网络传输数据封装流程     (重点)
+	层层加头(每经过1层，加一个数据头)
+
+容易碰到的笔试面试题
+1) tcp/ip有哪几层
+	应用层、传输层、网络层、网络接口层
+2) 传输层有哪些协议
+	tcp   udp    icmp
+3) 应用层有哪些协议
+ 	http  ftp  dns  dhcp
+4) 请描述同一网段下主机A ping 主机B的全过程   (百度)
+	同一网段下   没用到dns
+  ping 192.168.1.100(不知道对方的网卡地址 MAC   MAC地址：每一个网卡有一个唯一地址(物理地址))	
+	如何得到对方MAC地址(用arp协议)
+  1) A发送一个ARP广播包，询问192.168.1.100的MAC地址是多少
+  2) B回送ARP包，包中携带自己的MAC地址(00 50 A9 90 88 07)	
+  3) A记录ip地址，ARP表中(以后不用发送广播包)（可以不写）
+  4) A 发送一个icmp报文给B
+  5) B收到回送一个icmp报文	
+
+作业讲解
+day1下午答案：
+1. 一个字符串中可能包含a-z中的多个字符，字符也可能重复，
+例如char a[] = "dfafdafdafdafadfdafjkadfdafdafiofidafefadfa";
+写一个程序，对于给定一个这样的字符串，求出字符串中出现次数最多的那个字母以及出现的次数
+（若次数最多的字母有多个，则全部求出）。
+#include <stdio.h>
+int main()
+{
+	int b[26] = { 0 };		//b[0] --> a的个数  ......
+	char a[] = "dfafdafdafdafadfdafjkadfdafdafiofidafefadfa";
+	int i = 0, max = 0;
+	while(a[i] != '\0')	//循环执行完，每个字母的个数被放到b中
+	{
+		b[a[i] - 'a']++;		//'d' - 'a' = 3   b[3]++
+		i++;
+	}
+	for(i = 0; i < 26; i++)
+	{
+		if(b[i] > max)	//最多字母个数放到max
+		{
+			max = b[i];
+		}
+	}
+	for(i = 0; i < 26; i++)
+	{
+		if(b[i] == max)
+			printf("%c  %d\n", i + 'a', b[i]);
+	}
+}
+
+3.用标准c文件I/O实现文件 copy，如：./mycp a.c b.c
+                       将a.c 内容copy到b.c中去
+#include <stdio.h>
+int main(int argc, char *argv[])	//知识点1  argc 参数个数 argv 参数值
+{
+	char buf[50] = { 0 };		// 0---> '\0'     0  NULL
+	if(argc < 3)	//容错
+	{
+		printf("param error\n");
+		printf("like this ./a.out a.c b.c");
+		return -1;
+	}	
+	FILE *fp = fopen(argv[1], "r");
+	int len;
+	if(fp != NULL)
+	{
+		FILE *fpw = fopen(argv[2], "w");
+		while((len = fread(buf, sizeof(char), sizeof(buf), fp)) > 0)
+		{
+			fwrite(buf, sizeof(char), len, fpw);
+		}	
+		fclose(fp);
+		fclose(fpw);
+	}
+}
+day2作业答案
+1. 用共享内存和信号完成如下功能：一个进程在将数据写入共享内存后，用信号通知另一个进程，
+                              另一个进程捕获信号，将信息打印出来
+read.c
+#include <sys/shm.h>
+#include <sys/ipc.h>
+#include <stdio.h>
+#include <signal.h>
+char *p;
+void fun(int num)
+{
+	printf("%s\n", p);
+}
+int main()
+{
+	int i;
+	signal(SIGUSR1, fun);
+	int shmid = shmget(55555, 100 * sizeof(char), 0666 | IPC_CREAT);   ///IPC_CREAT  表示创建一块共享内存
+	p = shmat(shmid, NULL, 0);
+	printf("myid is %d\n", getpid());
+	while(1)
+	{
+		sleep(1);
+	}
+}
+
+write.c
+
+#include <sys/shm.h>
+#include <sys/ipc.h>
+#include <stdio.h>
+#include <signal.h>
+int main(int argc, char *argv[])
+{
+	int i;
+	int shmid;
+	if(argc < 2)
+	{
+		printf("param error! like this ./write 11111\n");
+	}
+	shmid = shmget(55555, 100 * sizeof(char), 0666 | IPC_CREAT);
+	int pid = atoi(argv[1]);
+	char *p = shmat(shmid, NULL, 0);
+	while(1)
+	{
+		scanf("%s", p);
+		kill(pid, SIGUSR1);
+	}
+}
+2. 多线程：
+实现主进程创建两个子线程，一个线程打印字符'M'，另一个线程打印字符'Y',
+要求M和Y交错打印, M和Y以参数的形式传递给fun函数
+M
+Y
+Y
+Y
+M
+Y
+Y
+Y
+#include <pthread.h>
+#include <stdio.h>
+void *funM(void *p)
+{
+	while(1)
+	{
+		printf("%s\n", (char *)p);
+		sleep(3);
+	}
+}
+void *funY(void *p)
+{
+	while(1)
+	{
+		printf("%s\n", (char *)p);
+		sleep(1);
+	}
+}
+int main()
+{
+	char a[] = "M";
+	char b[] = "Y";
+	pthread_t id;
+	pthread_create(&id, NULL, funM, a);	//创建线程之后，马上会执行 fun
+	pthread_create(&id, NULL, funY, b);	//创建线程之后，马上会执行 fun
+	while(1)
+	{
+		//printf("main running\n");
+		sleep(1);
+	}
+}
+
+作业：
+1、自己画出tcp/ip模型 并写出 每层的主要协议?
+2、http、ftp、dhcp、dns、smtp、pop3协议的作用?
+3、上面协议传输数据时采用的是传输层的哪个协议?
+4、练习nc命令、netstat命令的使用
+
+
+

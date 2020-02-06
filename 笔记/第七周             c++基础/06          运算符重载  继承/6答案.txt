@@ -1,0 +1,778 @@
+/*************************************************
+
+              day6
+			  
+*************************************************/
+//  函数指针的用处： 把逻辑当做参数传递 是函数指针
+
+成员指针运算符示例：
+#include <iostream>
+using namespace std;
+
+class Person
+{
+public:
+	int age;
+public:
+	Person(int age):age(age){}
+	void show()
+	{
+		cout<<age<<endl;
+	}
+};
+
+int main()
+{
+	-----------------------------------------------
+	指针指向变量：
+	一般情况：person p(10);
+	int *p=&p.age;
+	
+	int person::* p = person::age;
+	
+	person p1(0);
+	fun(p1);
+	p1.show();
+	
+	person p2(0);
+	fun(p2);
+	p2.show();
+	------------------------------------------------
+	
+	Person xiaoming(10);
+	Person xiaohong(20);
+
+	void(Person::*ps)() = &Person::show;
+	(xiaoming.*ps)();
+	(xiaohong.*ps)();
+
+	xiaoming.show();
+	xiaohong.show();
+
+	return 0;
+}
+-------------------------------------------
+void fun(person* obj)//后加 只为演示成员变量
+{
+	int person::* p = &person::age;
+	obj-> *p=10;
+}
+---------------------------------------------
+
+//练习：设计一个三角形类Triange 包含三角形三条边长的私有数据成员
+ //       另有一个重载运算符'+'  以实现求两个三角形周长之和  注意：两个三角形对象相加
+
+头文件
+
+#ifndef TRIANGE_H
+#define TRIANGE_H
+
+
+class Triange
+{
+public:
+    Triange(int a, int b, int c);
+    ~Triange();
+    
+    int operator+(const Triange& other);
+    void show();
+private:
+    int a;
+    int b;
+    int c;
+};
+
+#endif
+
+源文件
+
+#include "Triange.h"
+
+Triange::Triange(int a, int b, int c):a(a),b(b),c(c)
+{
+    
+}
+
+Triange::~Triange()
+{
+    
+}
+
+int Triange::operator+(const Triange &other)
+{
+    int l = a+b+c;
+    int ol = other.a+other.b+other.c;
+    return l+ol;
+}
+
+void Triange::show()
+{
+    
+}
+
+main
+
+#include <iostream>
+#include "Triange.h"
+
+using namespace std;
+
+int main()
+{
+    Triange t1(3,3,3);
+    Triange t2(4,4,4);
+    int l = t1+t2;
+    cout<<l<<endl;
+    return 0;
+}
+
+
+//练习：设计一个学生类 包括姓名和三门成绩(C++ C linux) 利用重载运算符'+=' 将所有学生成绩的和汇总到一个学生对象中
+    string name;
+    int cscore;
+    int cppscore;
+    int linuxscore;
+
+头文件
+#ifndef STUDENT_H
+#define STUDENT_H
+#include <string>
+
+using namespace std;
+
+class Student
+{
+public:
+    Student(string name, int cscore, int cppscore, int linuxscore);
+    Student &operator+=(const Student& other);
+    void show();
+    ~Student();
+private:
+    string name;
+    int cscore;
+    int cppscore;
+    int linuxscore;
+};
+
+#endif // STUDENT_H
+
+源文件 
+#include "student.h"
+#include <iostream>
+
+using namespace std;
+
+
+Student::Student(string name, int cscore, int cppscore, int linuxscore):
+    name(name),
+    cscore(cscore),
+    cppscore(cppscore),
+    linuxscore(linuxscore)
+{
+    
+}
+
+Student &Student::operator+=(const Student &other)
+{
+    cscore += other.cscore;
+    cppscore +=other.cppscore;
+    linuxscore += other.linuxscore;
+    return *this;
+}
+
+void Student::show()
+{
+    cout<<name<<" "<<cscore<<" "<<cppscore<<" "<<linuxscore<<endl;
+}
+
+Student::~Student()
+{
+    
+}
+
+main
+#include <iostream>
+#include "student.h"
+
+using namespace std;
+
+int main()
+{
+    Student students[3] = {
+        Student("大雨",234,45,67),
+        Student("中雨",43,456,67),
+        Student("小雨",3,45,7)
+    };
+    for(int i = 1;i < 3;i++)
+    {
+        students[0] += students[i];
+    }
+    students[0].show();
+    return 0;
+}
+
+
+//练习：在Time类中设计如下重载运算符函数++
+       1.私有成员h m s
+       2.重载后缀++ 让时间编程下一秒
+       3.show函数显示时间
+	   
+	   
+头文件
+#ifndef TIME_H
+#define TIME_H
+
+
+class Time
+{
+public:
+    Time(int h, int m, int s);
+    Time &operator++(int a);
+    void show();
+    ~Time();
+private:
+    int h;
+    int m;
+    int s;
+};
+
+#endif // TIME_H
+源文件
+#include "time.h"
+#include <iostream>
+
+using namespace std;
+
+Time::Time(int h, int m, int s):
+    h(h),
+    m(m),
+    s(s)
+{
+    
+}
+
+Time &Time::operator++(int a)
+{
+    s += 1;
+    m += s/60;
+    h += m/60;
+    
+    s %= 60;
+    m %= 60;
+    h %= 24;
+    return *this;
+}
+
+void Time::show()
+{
+    cout<<h<<":"<<m<<":"<<s<<endl;
+}
+
+Time::~Time()
+{
+    
+}
+main
+#include <iostream>
+#include "time.h"
+#include <windows.h>// win下编程
+
+using namespace std;
+
+int main()
+{
+    Time t(23,59,59);
+	while（true）
+	{
+		  t++;
+		t.show();
+		sleep(1000);
+	}
+  
+    return 0;
+}
+
+综合练习：
+/****************************************/
+/*父类 ：Person类
+*       定义构造函数，通过参数列表形式初始化成员
+	    数据：
+		  名字 name
+		  年龄 age
+*子类： Student类
+		定义构造函数，通过参数列表形式 初始化父类及子类成员
+		数据：
+		  工作 work
+		 成员函数：show()显示数据*/
+/****************************************/
+
+#include <iostream>
+#include <string>
+using namespace std;
+
+class Person{
+public:
+		string name;
+		int age;
+		Person(string name,int age):name(name),age(age)
+		{
+		}
+};
+
+class Student:public Person{
+public:
+		string work;
+		Student(string name,int age,string work):
+		Person(name,age),
+		work(work){}
+		void show(){
+			cout << age <<" " << name << " do " << work<<endl;
+		}
+};
+
+int main(){
+	Student stu("zhangsan",23,"study");
+	stu.show();
+	return 0;
+}
+
+//练习：编写程序 
+设计一个汽车类Vehicle 包含的数据成员：车轮个数wheels,车重weight 
+小车类car是汽车类的派生类 包含数据成员:载人数passenger_load 
+卡车类Truck是汽车类的派生类 包含： 载人数passenger_load  载重量pay_load
+每个类都有相关数据的输出方法show显示所有的成员
+Vehicle.h
+#ifndef VEHICLE_H
+#define VEHICLE_H
+
+
+class Vehicle
+{
+public:
+    Vehicle(int wh, int we);
+
+    void show();
+protected:
+    int wheels;
+    int weight;
+};
+
+#endif // VEHICLE_H
+Vehicle.cpp
+
+#include "vehicle.h"
+#include <string>
+#include <iostream>
+
+using namespace std;
+
+
+Vehicle::Vehicle(int wh, int we):
+    wheels(wh),
+    weight(we)
+{
+    
+}
+
+void Vehicle::show()
+{
+    cout<<wheels<<" "<<weight<<endl;
+}
+
+car.h
+#ifndef CAR_H
+#define CAR_H
+
+#include "vehicle.h"
+
+class Car : public Vehicle
+{
+public:
+    Car(int wh, int we, int pl);
+    void show();
+private:
+    int passenger_load;
+};
+
+#endif // CAR_H
+
+car.cpp
+#include "car.h"
+#include <iostream>
+
+using namespace std;
+
+Car::Car(int wh, int we, int pl):
+    Vehicle(wh, we),
+    passenger_load(pl)
+{
+    
+}
+
+void Car::show()
+{
+	Vehicle::show();
+	cout<<passenger_load<<endl;
+    //cout<<this->wheels<<" "<<this->weight<<" "<<this->passenger_load<<endl;
+}
+
+truck.h
+#ifndef TRUCK_H
+#define TRUCK_H
+
+#include "vehicle.h"
+
+class Truck : public Vehicle
+{
+public:
+    Truck(int wh, int we, int pas, int pay);
+    void show();
+private:
+    int passenger_load;
+    int pay_load;
+};
+
+#endif // TRUCK_H
+
+truck.cpp
+#include "truck.h"
+#include <iostream>
+
+using namespace std;
+
+
+Truck::Truck(int wh, int we, int pas, int pay):
+    Vehicle(wh, we),
+    passenger_load(pas),
+    pay_load(pay)
+{
+    
+}
+
+void Truck::show()
+{
+    Vehicle::show();
+    cout<<passenger_load<<" "<<pay_load<<endl;
+}
+
+main
+#include <iostream>
+#include "car.h"
+#include "truck.h"
+
+using namespace std;
+
+int main()
+{
+    Car c(4, 1300, 5);
+    Truck t(8, 13000, 3, 10000);
+    c.show();
+    cout<<"--------------"<<endl;
+    t.show();
+    return 0;
+}
+
+练习：
+先设计一个Point类 包含：x，y(坐标)  --基类
+由Point类派生出一个Circle类 增加数据成员r(半径)
+Circle类定义函数计算面积
+由Circle类为直接基类派生出一个Cylinder（圆柱体）类 再增加成员h(高)
+Cylinder（圆柱体）类定义函数计算体积
+
+circle.h
+#ifndef CIRCLE_H
+#define CIRCLE_H
+
+#include "point.h"
+
+class Circle : public Point
+{
+public:
+    Circle(int x, int y, int r);
+    int area();
+protected:
+    int r;
+};
+
+#endif // CIRCLE_H
+
+circle.cpp
+#include "circle.h"
+
+Circle::Circle(int x, int y, int r):
+    Point(x, y),
+    r(r)
+{
+    
+}
+
+int Circle::area()
+{
+    return 3.14*r*r;
+}
+
+Cylinder.h
+#ifndef CYLINDER_H
+#define CYLINDER_H
+
+#include "circle.h"
+
+
+class Cylinder : public Circle
+{
+public:
+    Cylinder(int x, int y, int r, int h);
+    int volume();
+private:
+    int h;
+};
+
+#endif // CYLINDER_H
+
+Cylinder.cpp
+#include "cylinder.h"
+
+
+Cylinder::Cylinder(int x, int y, int r, int h):
+    Circle(x, y, r),
+    h(h)
+{
+    
+}
+
+int Cylinder::volume()
+{
+    return area()*h;
+}
+
+Point.h
+#ifndef POINT_H
+#define POINT_H
+
+
+class Point
+{
+public:
+    Point(int x, int y);
+    
+protected:
+    int x;
+    int y;
+};
+
+#endif // POINT_H
+
+Point.cpp
+#include "point.h"
+
+Point::Point(int x, int y):
+    x(x),
+    y(y)
+{
+    
+}  
+
+main
+#include <iostream>
+#include "circle.h"
+#include "cylinder.h"
+
+using namespace std;
+
+int main()
+{
+    Circle cir(1, 1, 10);
+    cout<<cir.area()<<endl;
+    Cylinder cy(1, 1, 10, 5);
+    cout<<cy.volume()<<endl;
+    return 0;
+}
+
+练习：
+定义一个类Animal
+属性：名称 颜色 腿条数
+写构造方法：给属性赋值
+每个属性私有权限，可以通过get，set方法赋值
+方法：eat()，move()无参数方法
+
+定义一个子类Sheep
+咩咩叫：roar()
+
+定义一个子类Tiger
+奔跑run()
+
+创建测试类
+创建四条腿白色山羊，调用相关方法
+创建四条腿白色东北虎，调用相关方法
+
+animal.h
+#ifndef ANIMAL_H
+#define ANIMAL_H
+
+#include <string>
+
+using namespace std;
+
+class Animal
+{
+public:
+    Animal(string name, string color, int legs);
+    string getName();
+    void setName(string name);
+    string getColor();
+    void setColor(string color);
+    int getLegs();
+    void setLegs(int legs);
+    void eat();
+    void move();
+private:
+    string name;  
+    string color;
+    int legs;
+};
+
+#endif // ANIMAL_H
+animal.cpp
+#include "animal.h"
+#include <iostream>
+
+using namespace std;
+
+
+Animal::Animal(string name, string color, int legs):
+    name(name),
+    color(color),
+    legs(legs)
+{
+    
+}
+
+string Animal::getName()
+{
+    return name;
+}
+
+void Animal::setName(string name)
+{
+    this->name = name;
+}
+
+string Animal::getColor()
+{
+    return color;
+}
+
+void Animal::setColor(string color)
+{
+    this->color = color;
+}
+
+int Animal::getLegs()
+{
+    return legs;
+}
+
+void Animal::setLegs(int legs)
+{
+    this->legs = legs;
+}
+
+void Animal::eat()
+{
+    cout<<name<<"岔开"<<legs<<"条腿吃"<<endl;
+}
+
+void Animal::move()
+{
+    cout<<name<<"迈开"<<legs<<"条腿跑"<<endl;
+}
+
+sheep.h
+#ifndef SHEEP_H
+#define SHEEP_H
+
+#include <string>
+#include "animal.h"
+
+using namespace std;
+
+class Sheep : public Animal
+{
+public:
+    Sheep(string name, string color, int legs);
+    void roar();
+};
+
+#endif // SHEEP_H
+
+sheep.cpp
+#include "sheep.h"
+#include <iostream>
+
+
+Sheep::Sheep(string name, string color, int legs):
+    Animal(name, color, legs)
+{
+    
+}
+
+void Sheep::roar()
+{
+    cout<<"咩咩叫"<<endl;
+}
+
+
+tiger.h
+#ifndef TIGER_H
+#define TIGER_H
+
+#include "animal.h"
+#include <string>
+
+using namespace std;
+
+class Tiger : public Animal
+{
+public:
+    Tiger(string name, string color, int legs);
+    void run();
+};
+
+#endif // TIGER_H
+
+tiger.cpp
+#include "tiger.h"
+#include <iostream>
+
+
+Tiger::Tiger(string name, string color, int legs):
+    Animal(name, color, legs)
+{
+    
+}
+
+void Tiger::run()
+{
+    cout<<"奔跑"<<endl;
+}
+
+main
+#include <iostream>
+#include "tiger.h"
+#include "sheep.h"
+
+using namespace std;
+
+int main()
+{
+    Sheep s("山羊","白色",4);
+    s.eat();
+    s.move();
+    s.roar();
+    
+    Tiger t("东北虎","白色",4);
+    t.eat();
+    t.move();
+    t.run();
+    return 0;
+}

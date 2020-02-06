@@ -1,0 +1,326 @@
+
+一、 复习
+	1.  TCP 建立连接的过程是怎样的？端口什么作用？   三次握手。 1. connect  2. accept  3. send     端口：用来识别套接字
+	2.  internet采用哪种网络协议？该协议的层次结构?  ip协议。 网络层。 
+	3.  internet 物理地址和IP 地址转换用什么协议？   ARP 协议。 
+	4.  IP编码分为哪两个部分?         				 网络号+主机号
+	5.  ICMP是什么协议？处于哪层？    				 互联网控制信息协议。  网络层。 
+	6.  进程和线程区别：                             进程是程序运行和系统资源分配的最小单位。 线程只是进程的多任务。 
+	7.  文件描述符的分配规则                         程序运行时，系统默认打开 0 1 2 描述符。 自定义的描述符，从 3 开始分配。  
+	8.  tcp三次握手过程 accept 发生在哪个阶段？      第二个阶段。 应答阶段。 1bit  ack   1
+	9.  网络编程中 设计并发服务器 使用多进程与多线程区别?
+		（1）线程执行开销小，但不利于资源管理和保护；而进程正相反。 
+		（2）多进程，每个进程有自己的地址空间，线程则共享地址空间。    
+		（3）因为线程共用地址空间，所以。 a. 线程产生的速度快、切换快   
+										  b. 资源利用率比较好也是因为共享地址空间的问题   
+										  c.线程使用公共变量或内存时需要使用同步机制
+
+	10. OSI 7层模型 ：            应用层、表示层、会话层、传输层、网络层、数据链路层、物理层
+	11. DNS作用     ：            域名解析系统。  将ip 和 域名对应起来。  	
+	12. 进程间通信方式 效率最高   共享内存。  	
+	13. 收尸方法                  wait(NULL);    waitpid(pid,&a,WNOHANG);
+	14. 孤儿进程 僵尸进程          
+	15. 进程IPC通信有哪些？       共享内存 、消息队列、 信号量。 
+	16. bind listen作用           bind 绑定：将 网络地址结构 和 套接字 做一个绑定。    listen 监听。 listen(sockfd, 10); 	
+	17. 大端模式 小端模式         大端： 高 低、 低 高             小端： 高 高 低 低 
+
+
+
+二、广播与组播    （udp）
+1. 广播 
+a. 如果同时发给局域网中的所有主机，称为广播
+b. 只有用户数据报(使用UDP协议)套接字才能广播
+c. 广播地址以192.168.1.0 (255.255.255.0) 网段为例，
+	最大的主机地址192.168.1.255代表该网段的广播地址,发到该地址的数据包被所有的主机接收
+	255.255.255.255 在所有网段中都代表广播地址
+
+发送方： 
+/////////////////////
+#include <stdio.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+int main()
+{
+	int sockfd = socket(AF_INET, SOCK_DGRAM, 0);    // 发送广播注意三点即可。 1. 使用 udp 通信。 套接字类型为 SOCK_DGRAM 
+	if(sockfd < 0)
+	{
+		perror("socket");
+		return -1;
+	}
+	int on = 1;
+	if(setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &on, sizeof(on)) < 0)    // 2. 设置允许发送广播。 
+	{
+		perror("setsockopt");
+		return -1;
+	}
+	struct sockaddr_in toaddr;
+	toaddr.sin_family = AF_INET;
+	toaddr.sin_port = htons(9999);
+	toaddr.sin_addr.s_addr = inet_addr("192.168.1.255");    // 3 发送地址要写广播地址。 
+
+	sendto(sockfd, "Welcome to Shenyang", 19 , 0, (struct sockaddr *)&toaddr, 16);
+	close(sockfd);
+	return 0;
+}
+
+接收方： 
+////////////////////////
+#include <stdio.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+int main()
+{
+	int sockfd = socket(AF_INET, SOCK_DGRAM, 0); 
+	if(sockfd < 0)
+	{
+		perror("socket");
+		return -1;
+	}
+
+	int len = sizeof(struct sockaddr_in);
+	struct sockaddr_in myaddr;
+	myaddr.sin_family = AF_INET;
+	myaddr.sin_port = htons(9999);                // 端口设置好即可。 
+	myaddr.sin_addr.s_addr = htonl(INADDR_ANY);   // ip 处于广播地址的同一网段即可。 
+	
+	if(bind(sockfd, (struct sockaddr *)&myaddr, len) < 0)
+	{
+		perror("bind");
+		return -1;
+	}
+
+	char buf[128] = {0};
+	recvfrom(sockfd,buf,sizeof(buf),0,NULL,NULL);
+	printf("recv : %s\n",buf);
+	return 0;
+}
+
+
+2. 组播  	
+a.  多播方式既可以发给多个主机，又能避免象广播那样带来过多的负载(每台主机要到传输层才能判断广播包是否要处理)
+b.  使用多播时， 把需要用到的多播地址(如本例的224.0.0.88)加入到路由表中，命令如下：
+	sudo route add -net 224.0.0.88 netmask 255.255.255.255 eth0
+
+发送方： 
+///////////////////////
+#include <stdio.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+int main()
+{
+	int sockfd = socket(AF_INET, SOCK_DGRAM, 0); 
+	if(sockfd < 0)
+	{
+		perror("socket");
+		return -1;
+	}
+
+	struct sockaddr_in toaddr;
+	toaddr.sin_family = AF_INET;
+	toaddr.sin_port = htons(9999);
+	toaddr.sin_addr.s_addr = inet_addr("224.10.10.88");     // 发送方注意发送的地址。 
+
+	sendto(sockfd, "Welcome to Shenyang", 19 , 0, (struct sockaddr *)&toaddr, 16);
+	close(sockfd);
+	return 0;
+}
+
+接收方： 
+/////////////////////////
+#include <stdio.h>
+#include <strings.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+int main()
+{
+	int sockfd = socket(AF_INET, SOCK_DGRAM, 0); 
+	if(sockfd < 0)
+	{
+		perror("socket");
+		return -1;
+	}
+
+	int len = sizeof(struct sockaddr_in);
+	struct sockaddr_in myaddr;
+	myaddr.sin_family = AF_INET;
+	myaddr.sin_port = htons(9999);
+	myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	
+	struct ip_mreq  mreq;              // 该结构在 <netinet/in.h> 中有定义。 
+	bzero(&mreq, sizeof(mreq)); 
+	mreq.imr_multiaddr.s_addr = inet_addr("224.10.10.88");    // 多播组地址。 
+	mreq.imr_interface.s_addr = htonl(INADDR_ANY);            // 自己地址。 
+
+	if(setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP,&mreq, sizeof(mreq)) < 0)   // 设置加入多播组。 
+	{
+		perror("setsockopt");
+		return -1;
+	}
+
+	if(bind(sockfd, (struct sockaddr *)&myaddr, len) < 0)    // 绑定。 
+	{
+		perror("bind");
+		return -1;
+	}
+
+	char buf[128] = {0};
+	recvfrom(sockfd,buf,sizeof(buf),0,NULL,NULL);        // 要注意加入多播组后再绑定，再接收即可。 
+	printf("recv : %s\n",buf);
+	return 0;
+}
+编译执行： 
+gcc -o s send.c 
+gcc -o r recv.c 
+./r  
+./s  
+
+注： 如果编译或运行时报 routine 错误。 只需要将 多播组地址添加到路由表中即可。 
+
+
+
+
+三、 数据库安装  
+1. 将安装包移动到当前路径下即可。 命令： mv  *.deb  ./ 
+
+2. 安装命令： sudo  dpkg -i  *.deb
+
+3. 测试是否安装成功： 
+linux@ubuntu:~$ sqlite3    // 终端输入 sqlite3 ，出现版本，即为安装成功
+SQLite version 3.7.2
+Enter ".help" for instructions
+Enter SQL statements terminated with a ";"
+sqlite> .quit
+
+
+
+
+四、数据库使用
+
+（1）基础知识：
+
+1. 数据存储三种方式 
+1）直接地址存储         没有文件系统的情况，采用直接地址存储（非常不方便，不容易扩充）
+2）文件                （数据量不大，数据规律性不强，而且需要方便读取，那就放到文件中）    用户名， 密码 
+3）数据库 （学生管理系统、库存系统）
+分类： 
+大型数据库（银行、电信、qq、百度、京东、阿里）
+Oracle/sybase/DB2
+
+中型数据库 
+sql  server (微软)
+mysql       (甲骨文，开源)
+
+小型数据库 
+sqlite  (用在嵌入式设备、手机)
+安装使用特别方便
+
+
+2. 数据库中有哪些概念 
+数据库：将所有的数据，各种类型，描述各种事物的数据放到一起。
+			如：my.db 文件，就是一个数据库文件  
+数据表：描述某一个事物的基本信息的表
+			如： 图书管理系统 
+					学生信息表：		编号   姓名  性别 年龄 班级 爱好 
+					图书信息表：		图书编号  书名 出版社  作者  分类 
+					借阅表： 
+记录 ： 表里面的一条信息 
+字段 ： 列名 
+
+
+
+（2）操作方式： 
+a. 命令 和 sql 语句  
+b. sql 脚本  
+c. c 编程接口  
+
+1.  命令  和  sql 语句 
+1.1命令： （以'.'开头的） 
+.quit         退出  
+.help         帮助 
+.databases    查看数据库文件的路径
+.tables       查看数据表  
+.mode column  设置列对齐 
+.header on    打开字段名
+
+
+1.2 sql 语句： 
+
+对表的操作： 
+（1）创建表  create table          create table 表名(字段名 字段类型，字段名 字段类型);
+（2）删除表  drop table            drop table 表名; 
+（3）修改表  alter table           alter table 表名 add column 字段名 字段类型 ;  
+
+对记录的操作：
+（1）增加 insert into         insert into 表名 values(字段值1， 值2，值3);
+（2）修改 update              update 表名 set 字段=新值 where 条件;
+（3）删除 delete from         delete from 表名 where 条件1 and 条件2; 
+（4）查找 select              select 字段名 from 表名;
+
+// 练习：   创建学生成绩表。 
+要求： 
+(1)表中的字段：name  data  linux  socket       create table grade (name varchar[20], data integer, linux integer, socket integer);
+(2)添加三名同学信息到表中。                    insert into grade values('Lye',90,90,77);
+(3)查找linux 成绩 高于 90 的学生信息。 		   select * from grade where linux > 90;
+(4)更新某个同学的成绩。                        update grade set data=97 where name is 'xiaoming';
+
+
+添加条件的查询： 
+a. 查询data成绩是 90  的记录 
+b. 查询linux成绩 > 80 的记录  
+c. 查询记录 只想看编号、姓名字段  
+d. 如果想按顺序输出所有记录，按linux成绩排序  
+e. 模糊查询（假设有一个人名我记不住了，但能记住名字中的一个字，就可以用模糊查询）查询名字当中带li字符的人  
+f. 多条件查询 ：想查询学号大于 10002 的， 名字中带'li'的学生信息 
+g. 统计记录条数 
+h. 统计所有人的年龄总和
+i. 统计所有人的年龄平均值 
+
+a.  select * from grade where data=90;
+b.  select * from grade where linux>80;
+c.  select name,socket from grade;
+d.  select * from grade order by socket(desc);    按 socket 字段升序排列（降序）。
+e.  select * from grade where name like '%ng%';
+f.  select * from grade where name like '%ng%' and linux >= 90;
+g.  select count(*) from grade;
+h.  select sum(linux) from grade;
+i.  select avg(linux) from grade;
+j.  select min(linux) from grade;
+k.  select max(socket) from grade;
+
+
+2. 脚本： 
+
+vi x.sql 
+//////////////////////
+drop table if exists class;
+create table class(class_name varchar[10], class_number integer);
+insert into class values('19111', 24);
+insert into class values('19091', 30);
+select * from class;
+
+执行：  sqlite3 my.db < x.sql 
+
+
+
+//作业： 
+图书管理系统     *.db 
+(1) 创建图书基本信息数据表      图书编号  图书名称  出版社  作者  出版日期
+(2) 创办办理借阅卡的学生基础表  学生编号  学生姓名  所在系  所在班 
+(3) 创建学生借阅表              学生编号  图书编号  借阅日期  借阅时间 是否归还 
+//要求：添加记录并查询  
+
+查询指定出版社的图书信息 
+查询指定作者的图书信息 
+
+查询某个编号的图书的基本信息 
+查询已借出图书的图书名称  
+
+修改某个编号的图书的基本信息
+
+
+
+

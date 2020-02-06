@@ -1,0 +1,1209 @@
+/************************************************
+
+			day7
+			
+************************************************/	
+
+复习：
+
+设计模式之单例模式 
+
+1.单例模式的作用与目的
+
+作用：保证了一个类仅有一个实例，并提供了一个访问它的全局访问点
+
+目的：为了保证类的实例对象只有一个
+
+主要解决：一个全局使用的类 频繁的创建与销毁
+
+关键： 构造函数和拷贝构造私有化
+
+2、实现方法
+
+	1.私有构造函数和拷贝构造函数   不让类的外部创建对象
+	2.静态类指针     在静态成员函数中实现只创建一个对象的逻辑
+	3.静态成员函数返回类指针  用来实例化(new)对象
+
+
+运算符重载：参数个数由运算符决定，参数类型随意，返回值类型随意
+int operator+(int a)
+Person
+{};
+Person p;
+Person p1;
+p + p1;
+运算符的左值调用运算符
+
+赋值运算符重载，会有默认的赋值运算符重载
+p = p1;
+Person p(p1);
+person p2 = p1;
+
+取地址运算符也会有默认的
+++ -- 重载
+前缀：没有参数
+后缀：定义一个int类型参数
+
+不能重载的运算符:5个 sizeof()  ?:  .  ::  .* 成员指针运算符
+
+继承
+class Person{};
+class Student : public Person
+{};
+继承权限，从父类继承的成员所能有的最大访问权限
+
+
+【题目1】请简要描述C++中的重载运算符
+重载运算符时实际上是重载了一个特殊的函数，函数的名字是 operator加要重载的符号，
+参数是由运算符需要几个操作数来决定，返回类型通过需求来决定。
+
+【题目2】如何重载前++和后++运算符？
+++在前函数为正常写，返回类型 operator++()
+++在后函数为， 返回类型 operator++(int)，int只表区分，没有任何实际意义
+
+【题目3】面向对象的三大特征是什么？请简要描述一下？
+(1)封装，将具有相同属性和行为的一系列对象封装成一个类，将一系列重复性的代码封装成函数，
+数据的隐藏，将不对外公开的属性和行为使用private进行修饰，保证数据安全。
+(2)继承，子类继承父类的所有非private的变量和函数，C++的继承允许一个子类同时继承多个父类。
+(3)多态，一种状态多种表现形式，具体体现在父类指针（引用）指向子类对象。
+
+【题目4】C++的访问权限都有什么？请描述？
+				本类		派生类		类外
+public			  T			  T		     T
+protected		  T			  T			
+private
+
+【题目5】在继承时，继承方式都有什么影响？
+当用public继承时，派生类继承到的所有成员访问权限不变
+当用protected继承时，派生类继承到的public成员变为protected，其余不变
+当用private继承时，派生类集成到的所有成员都为private
+
+【题目】C++重写、重载的区别？
+							  重写							重载
+							  
+前提（涉及类的个数）	发生在继承情况，2个以上		在同一个类中，1个
+返回类型					必须相同				   可以不同
+函数名					    必须相同					必须相同
+参数列表					必须相同				必须不同（个数或类型不同）
+
+C++的虚函数主要作用是“运行时多态”，父类中提供虚函数的实现，
+为子类提供默认的函数实现。子类可以重写父类的虚函数实现子类的特殊化。
+
+
+
+
+//练习：
+1.定义基类Developer，有虚函数develop()
+2.定义大神类Manito和菜鸟类SmallBird继承Developer，重写develop()
+3.定义公司类Company，定义成员函数招聘recruit()随机生成一个开发者对象，返回值为Developer*
+4.定义Company类的成员函数work(Developer* )，调用Developer的develop()
+5.main中创建Company对象，调用recruit()获得一个Developer，然后调用work()传入Developer参数
+
+Developer.h
+#ifndef DEVELOPER_H
+#define DEVELOPER_H
+
+
+class Developer
+{
+public:
+    Developer();
+    ~Developer();
+    
+    virtual void develop();
+};
+
+#endif // DEVELOPER_H
+Developer.cpp
+#include "developer.h"
+
+Developer::Developer()
+{
+    
+}
+
+Developer::~Developer()
+{
+    
+}
+
+void Developer::develop()
+{
+    
+}
+
+Company.h
+#ifndef COMPANY_H
+#define COMPANY_H
+
+#include "developer.h"
+
+class Company
+{
+public:
+    Company();
+    Developer* recruit();
+    void work(Developer* dev);
+};
+
+#endif // COMPANY_H
+
+Company.cpp
+
+#include "company.h"
+#include <ctime>
+#include <cstdlib>
+#include "manito.h"
+#include "smallbird.h"
+
+Company::Company()
+{
+    srand(time(0));
+}
+
+Developer *Company::recruit()
+{
+    switch(rand()%2)
+    {
+    case 0:
+        return new Manito();
+    case 1:
+        return new SmallBird();
+    }
+}
+
+void Company::work(Developer *dev)
+{
+    dev->develop();
+}
+
+Manito.h
+#ifndef MANITO_H
+#define MANITO_H
+
+#include "developer.h"
+
+class Manito : public Developer
+{
+public:
+    void develop();
+};
+
+#endif // MANITO_H
+
+Manito.cpp
+#include "manito.h"
+#include <iostream>
+
+using namespace std;
+
+void Manito::develop()
+{
+    cout<<"大神开发"<<endl;
+}
+
+SmallBird.h
+
+#ifndef SMALLBIRD_H
+#define SMALLBIRD_H
+
+#include "developer.h"
+
+class SmallBird : public Developer
+{
+public:
+    void develop();
+};
+
+#endif // SMALLBIRD_H
+
+SmallBird.cpp
+
+#include "smallbird.h"
+#include <iostream>
+
+using namespace std;
+
+void SmallBird::develop()
+{
+    cout<<"小鸟开发"<<endl;
+}
+
+
+/////////////////////////笔记中
+#ifndef COMPANY_H
+#define COMPANY_H
+#include "developer.h"
+
+class Company
+{
+public:
+    Company();
+    Developer* recruit();
+    void work(Developer* d);
+    ~Company();
+};
+
+#endif // COMPANY_H
+
+#ifndef DEVELOPER_H
+#define DEVELOPER_H
+
+
+class Developer
+{
+public:
+    Developer();
+    virtual void develop();
+    ~Developer();
+};
+
+#endif // DEVELOPER_H
+
+#ifndef MANITO_H
+#define MANITO_H
+#include "developer.h"
+
+class Manito : public Developer
+{
+public:
+    Manito();
+    void develop();
+    ~Manito();
+};
+
+#endif // MANITO_H
+
+#ifndef SMALLBIRD_H
+#define SMALLBIRD_H
+#include "developer.h"
+
+class SmallBird : public Developer
+{
+public:
+    SmallBird();
+    void develop();
+    ~SmallBird();
+};
+
+#endif // SMALLBIRD_H
+
+#include "company.h"
+#include <cstdlib>
+#include <ctime>
+#include "manito.h"
+#include "smallbird.h"
+
+Company::Company()
+{
+    //初始化随机种子
+    srand(time(0));
+}
+//随机生成一个子类对象
+Developer *Company::recruit()
+{
+    Developer* d;
+    switch (rand()%2) {
+    case 0://大神
+         d = new Manito;
+        break;
+
+    case 1://菜鸟
+        d = new SmallBird;
+
+        break;
+    default:
+        break;
+    }
+    return d;
+}
+//调用子类对象中重写的虚函数
+void Company::work(Developer *d)
+{
+    d->develop();
+}
+
+Company::~Company()
+{
+
+}
+
+#include "developer.h"
+#include <iostream>
+
+using namespace std;
+Developer::Developer()
+{
+
+}
+
+void Developer::develop()
+{
+    cout<<"开发者开发"<<endl;
+}
+
+Developer::~Developer()
+{
+
+}
+#include "manito.h"
+#include <iostream>
+
+using namespace std;
+Manito::Manito()
+{
+
+}
+
+void Manito::develop()
+{
+    cout<<"大神开发"<<endl;
+}
+
+Manito::~Manito()
+{
+
+}
+
+#include "smallbird.h"
+#include <iostream>
+
+using namespace std;
+SmallBird::SmallBird()
+{
+
+}
+
+void SmallBird::develop()
+{
+    cout<<"菜鸟开发"<<endl;
+}
+
+SmallBird::~SmallBird()
+{
+
+}
+
+#include <iostream>
+#include "company.h"
+#include "developer.h"
+using namespace std;
+
+int main()
+{
+    Company com;
+
+    com.work(com.recruit());
+
+ //   Developer* d = com.recruit();
+ //   com.work(d);
+    return 0;
+}
+
+		
+练习：设计一个圆类Circle(半径)和一个桌子类Table(高度和颜色)  再设计一个圆桌类RoundTable 
+	它从前两个类派生 
+要求：输出一个圆桌的高度 面积和颜色
+
+Circle.h
+#ifndef CIRCLE_H
+#define CIRCLE_H
+
+
+class Circle
+{
+public:
+    Circle(int r);
+
+protected:
+    int r;
+};
+
+#endif // CIRCLE_H
+
+Circle.cpp
+#include "circle.h"
+
+
+Circle::Circle(int r):r(r)
+{
+    
+}
+Table.h
+#ifndef TABLE_H
+#define TABLE_H
+
+#include <string>
+
+using namespace std;
+
+class Table
+{
+public:
+    Table(string color, int height);
+protected:
+    string color;
+    int height;
+};
+
+#endif // TABLE_H
+Table.cpp
+#include "table.h"
+
+Table::Table(string color, int height):
+    color(color),
+    height(height)
+{
+    
+}
+
+RoundTable.h
+#ifndef ROUNDTABLE_H
+#define ROUNDTABLE_H
+
+#include "table.h"
+#include "circle.h"
+#include <string>
+
+
+class RoundTable : public Circle, public Table
+{
+public:
+    RoundTable(int height, std::string color, int r);
+    void show();
+};
+
+#endif // ROUNDTABLE_H
+RoundTable.cpp
+#include "roundtable.h"
+#include <iostream>
+
+using namespace std;
+
+
+RoundTable::RoundTable(int height, string color, int r):
+    Circle(r),
+    Table(color, height)
+{
+    
+}
+
+void RoundTable::show()
+{
+    cout<<color<<" "<<height<<" "<<3.14*r*r<<endl;
+}
+
+main
+#include <iostream>
+#include "roundtable.h"
+
+using namespace std;
+
+int main()
+{
+    RoundTable rt(10, "白色", 5);
+    rt.show();
+    return 0;
+}
+
+练习：设计一个虚基类Base 包括：protected数据姓名和年龄及 成员函数eat()
+由它派生出领导类Leader 包含私有数据职务和部门及 函数lead()
+再有Base类派生出工程师类Engineer 包含私有数据职称 专业及 函数develop()
+然后由Leader类和Engineer类派生出主任工程师类Boss
+
+base.h
+#ifndef BASE_H
+#define BASE_H
+
+#include <string>
+
+using namespace std;
+
+class Base
+{
+public:
+    Base(string name, int age);
+    void eat();
+protected:
+    string name;
+    int age;
+};
+
+#endif // BASE_H
+
+base.cpp
+#include "base.h"
+#include <iostream>
+
+Base::Base(string name, int age):
+    name(name),
+    age(age)
+{
+    cout<<"base create"<<endl;
+}
+
+void Base::eat()
+{
+    cout<<"吃"<<endl;
+}
+
+leader.h
+#ifndef LEADER_H
+#define LEADER_H
+
+#include "base.h"
+#include <string>
+
+using namespace std;
+
+class Leader : virtual public Base
+{
+public:
+    Leader(string name, int age, string dep, string stu);protected:
+    string department;
+    string study;
+    void lead();
+
+};
+
+#endif // LEADER_H
+
+leader.cpp
+
+#include "leader.h"
+#include <iostream>
+
+Leader::Leader(string name, int age, string dep, string stu):
+    Base(name, age),
+    department(dep),
+    study(stu)
+{
+    cout<<"leader create"<<endl;
+}
+
+void Leader::lead()
+{
+    cout<<"leader lead"<<endl;
+}
+
+Engineer.h
+#ifndef ENGINEER_H
+#define ENGINEER_H
+
+#include <string>
+#include "base.h"
+
+using namespace std;
+
+class Engineer : virtual public Base
+{
+public:
+    Engineer(string name, int age, string pro, string major);
+    void develop();
+protected:
+    string professional;
+    string major;
+};
+
+#endif // ENGINEER_H
+Engineer.cpp
+#include "engineer.h"
+#include <iostream>
+
+Engineer::Engineer(string name, int age, string pro, string major):
+    Base(name, age),
+    professional(pro),
+    major(major)
+{
+    cout<<"Engineer create"<<endl;   
+}
+
+void Engineer::develop()
+{
+    cout<<"Engineer develop"<<endl;
+}
+
+boss.h
+#ifndef BOSS_H
+#define BOSS_H
+
+#include "leader.h"
+#include "engineer.h"
+
+class Boss : public Leader, public Engineer
+{
+public:
+    Boss(string name, int age, string dep, string stu, string pro, string major);
+    
+};
+
+#endif // BOSS_H
+boss.cpp
+#include "boss.h"
+#include <iostream>
+
+using namespace std;
+
+Boss::Boss(string name, int age, string dep, string stu, string pro, string major):
+    Base(name, age),
+    Leader(name, age, dep, stu),
+    Engineer(name, age, pro, major)
+{
+    cout<<"boss create"<<endl;
+}
+
+main
+
+int main()
+{
+    Boss b("小明",18,"教务处","老师","物理专业","领导");
+    b.develop();
+    b.eat();
+    b.Lead();
+    return 0;
+}
+//////////////////////////////////笔记
+
+#ifndef BASE_H
+#define BASE_H
+#include<string>
+
+using namespace std;
+
+class Base
+{
+ protected:
+    string name;
+    int age;
+
+public:
+    Base(string name,int age);
+    void eat();
+    ~Base();
+};
+
+#endif // BASE_H
+
+#ifndef BOSS_H
+#define BOSS_H
+#include "leader.h"
+#include "engineer.h"
+
+class Boss : public Leader,public Engineer
+{
+public:
+    Boss(string name,int age,string duty,string department,string major,string professional);
+
+
+    ~Boss();
+};
+
+#endif // BOSS_H
+
+#ifndef ENGINEER_H
+#define ENGINEER_H
+#include<string>
+#include "base.h"
+using namespace std;
+
+class Engineer: virtual public Base
+{
+protected:
+    string major;
+    string professional;
+public:
+    Engineer(string name,int age,string major,string professional);
+    void develop();
+    ~Engineer();
+};
+
+#endif // ENGINEER_H
+
+#ifndef LEADER_H
+#define LEADER_H
+#include<string>
+#include "base.h"
+using namespace std;
+
+class Leader : virtual public Base
+{
+protected:
+    string duty;
+    string department;
+
+public:
+    Leader(string name,int age,string duty,string department);
+    void lead();
+    ~Leader();
+};
+
+#endif // LEADER_H
+
+#include "base.h"
+#include<iostream>
+
+using namespace std;
+
+Base::Base(string name, int age):name(name),age(age)
+{
+
+}
+
+void Base::eat()
+{
+    cout<<"base eat.."<<endl;
+}
+
+Base::~Base()
+{
+
+}
+
+#include "boss.h"
+
+
+
+Boss::Boss(string name, int age, string duty, string department, string major, string professional):
+    Base(name,age),
+    Leader(name,age,duty,department),
+    Engineer(name,age,major,professional)
+{
+
+}
+
+Boss::~Boss()
+{
+
+}
+
+#include "engineer.h"
+#include<iostream>
+
+using namespace std;
+
+Engineer::Engineer(string name, int age, string major, string professional):
+    Base(name,age),
+    major(major),
+    professional(professional)
+{
+
+}
+
+void Engineer::develop()
+{
+    cout<<name<<" "<<age<<" "<<major<<" "<<professional<<endl;
+}
+
+Engineer::~Engineer()
+{
+
+}
+
+#include "leader.h"
+#include<iostream>
+
+using namespace std;
+Leader::Leader(string name, int age, string duty, string department):
+    Base(name,age),
+    duty(duty),
+    department(department)
+{
+
+}
+
+void Leader::lead()
+{
+    cout<<name<<" "<<age<<"  "<<duty<<" "<<department<<endl;
+}
+
+Leader::~Leader()
+{
+
+}
+
+
+#include <iostream>
+#include "boss.h"
+using namespace std;
+
+int main()
+{
+   Boss boss("小明",90,"扫地","保洁","王者","软件");
+   boss.develop();
+   boss.lead();
+   boss.eat();
+    return 0;
+}
+
+//练习：定义一个抽象类形状Shape
+纯虚函数：获得周长：int getPerimeter();
+          得到形状：string getType();
+子类三角形：Triangle
+   属性：边长 a、b、c   
+子类圆形：Circle
+   属性：半径
+子类正方形：Square
+  属性：边长a  
+ 
+shap.h
+#ifndef SHAP_H
+#define SHAP_H
+
+#include <string>
+
+using namespace std;
+
+class Shap
+{
+public:    
+    virtual int getPerimeter() = 0;
+    virtual string getType() = 0;
+};
+
+#endif // SHAP_H
+
+circle.h
+#ifndef CIRCLE_H
+#define CIRCLE_H
+
+#include "shap.h"
+#include <string>
+
+using namespace std;
+
+class Circle : public Shap
+{
+public:
+    Circle(int r);
+    
+    int getPerimeter();
+    string getType();
+private:
+    int r;
+};
+
+#endif // CIRCLE_H
+
+circle.cpp
+#include "circle.h"
+
+Circle::Circle(int r):r(r)
+{
+    
+}
+
+int Circle::getPerimeter()
+{
+    return 2*r*3.14;
+}
+
+string Circle::getType()
+{
+    return "圆形";
+}
+
+square.h
+#ifndef SQUARE_H
+#define SQUARE_H
+
+#include "shap.h"
+#include <string>
+
+using namespace std;
+
+class Square : public Shap
+{
+public:
+    Square(int a);
+    int getPerimeter();
+    string getType();
+private:
+    int a;
+};
+
+#endif // SQUARE_H
+
+square.cpp
+#include "square.h"
+
+Square::Square(int a):a(a)
+{
+    
+}
+
+int Square::getPerimeter()
+{
+    return 4*a;
+}
+
+string Square::getType()
+{
+    return "正方形";
+}
+
+Triangle.h
+
+#ifndef TRIANGLE_H
+#define TRIANGLE_H
+
+#include "shap.h"
+#include <string>
+
+using namespace std;
+
+class Triangle : public Shap
+{
+public:
+    Triangle(int a, int b, int c);
+    int getPerimeter();
+    string getType();
+private:
+    int a;
+    int b;
+    int c;
+};
+
+#endif // TRIANGLE_H
+
+Triangle.cpp
+
+#include "triangle.h"
+
+
+Triangle::Triangle(int a, int b, int c):
+    a(a),
+    b(b),
+    c(c)
+{
+    
+}
+
+int Triangle::getPerimeter()
+{
+    return a+b+c;
+}
+
+string Triangle::getType()
+{
+    return "三角形";
+}
+
+main
+
+#include <iostream>
+#include "shap.h"
+#include "circle.h"
+#include "square.h"
+#include "triangle.h"
+#include <cstdlib>
+#include <ctime>
+
+using namespace std;
+
+
+int main()
+{
+    srand(time(0));
+    Shap* shap = NULL;
+    for(int i = 0;i < 10;i++)
+    {
+        switch(rand()%3)
+        {
+        case 0:
+            shap = new Triangle(2,2,2);
+            break;
+        case 1:
+            shap = new Circle(2);
+            break;
+        case 2:
+            shap = new Square(2);
+            break;
+        }
+        cout<<shap->getType()<<endl;
+        cout<<shap->getPerimeter()<<endl;
+        delete shap;
+    }
+    
+	return 0;
+}
+/////////////////////////////笔记
+#ifndef CIRCLE_H
+#define CIRCLE_H
+#include "shape.h"
+
+class Circle :public Shape
+{
+private:
+    int r;
+public:
+    Circle(int r);
+    int getPerimeter();
+    string getType();
+    ~Circle();
+};
+
+#endif // CIRCLE_H
+
+#ifndef SHAPE_H
+#define SHAPE_H
+#include<string>
+
+using namespace std;
+
+class Shape
+{
+public:
+    Shape();
+    //纯虚函数
+    virtual int getPerimeter() = 0;
+    virtual string getType() = 0;
+
+    ~Shape();
+};
+
+#endif // SHAPE_H
+
+#ifndef SQUARE_H
+#define SQUARE_H
+#include "shape.h"
+
+class Square :public Shape
+{
+private:
+    int a;
+public:
+    Square(int a);
+    int getPerimeter();
+    string getType();
+    ~Square();
+};
+
+#endif // SQUARE_H
+
+#ifndef TRIANGLE_H
+#define TRIANGLE_H
+#include "shape.h"
+
+class Triangle : public Shape
+{
+private:
+    int a;
+    int b;
+    int c;
+public:
+    Triangle(int a,int b,int c);
+    //重写父类虚函数
+    int getPerimeter();
+    string getType();
+
+    ~Triangle();
+};
+
+#endif // TRIANGLE_H
+
+#include "circle.h"
+
+Circle::Circle(int r):r(r)
+{
+
+}
+
+int Circle::getPerimeter()
+{
+    return (2*3.14*r);
+}
+
+string Circle::getType()
+{
+    return "圆形";
+}
+
+Circle::~Circle()
+{
+
+}
+
+#include <iostream>
+#include "triangle.h"
+#include "circle.h"
+#include "square.h"
+
+using namespace std;
+
+int main()
+{
+
+    Triangle t(3,4,5);
+    cout<<t.getPerimeter()<<endl;
+    cout<<t.getType()<<endl;
+
+    Circle c(4);
+    cout<<c.getPerimeter()<<endl;
+    cout<<c.getType()<<endl;
+
+    Square sq(6);
+    cout<<sq.getPerimeter()<<endl;
+    cout<<sq.getType()<<endl;
+
+    return 0;
+}
+
+#include "shape.h"
+
+Shape::Shape()
+{
+
+}
+
+Shape::~Shape()
+{
+
+}
+
+#include "square.h"
+
+Square::Square(int a):a(a)
+{
+
+}
+
+int Square::getPerimeter()
+{
+    return (4*a);
+}
+
+string Square::getType()
+{
+    return "正方形";
+}
+
+Square::~Square()
+{
+
+}
+
+#include "triangle.h"
+
+Triangle::Triangle(int a, int b, int c):a(a),b(b),c(c)
+{
+
+}
+
+int Triangle::getPerimeter()
+{
+    return (a+b+c);
+}
+
+string Triangle::getType()
+{
+    return "三角形";
+}
+
+Triangle::~Triangle()
+{
+
+}
+
+
+
+

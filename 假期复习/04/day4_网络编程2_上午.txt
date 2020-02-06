@@ -1,0 +1,136 @@
+第四天 (2学时)
+1 复习
+	tcp / ip
+	四层(应用层、传输层、网络层、网络接口层)
+	应用层(http ftp dns dhcp ....)
+	传输层(udp tcp icmp)
+	网络层(ip)
+	网络接口层( 以太网   wifi(802.11) )
+2 昨天问题
+	dhcp服务器有两个, 会出现什么情况
+	可以工作，不会影响整个网络(条件)，但是有一个工作不了
+
+重要socket函数讲解
+1 什么是socket
+	linux下网络通信又称为 socket编程， socket通信
+
+	socket提供了一系列的编程接口(函数)，又称为 socket api
+	从应用的角度来说，通过这些接口函数可以进行网络通信
+	从底层的角度来说，socket 封装了一些函数，实现了tcp/ip协议
+
+2 为什么有socket编程模型  (linux 有一个统一I/O模式   open read write close)
+	因为 I/O 模型并不能完整的表述出 网络通信过程
+
+3 socket函数(类似于open函数，创建一个socket)
+	man 2 socket
+  int socket(int domain, int type, int protocol);
+  作用：创建一个socket
+  参数：domain (代表网络的类型  AF_INET (ipv4))
+        type   (协议的类型, udp / tcp)
+		重点:
+		udp (SOCK_DGRAM   数据报套接字)
+		tcp (SOCK_STREAM  流式套接字)
+        protocol(通常是0)
+  返回值:  一个描述符(fd)
+	> 表示创建成功
+	< 0 创建失败
+  udp通信socket实例
+#include <sys/types.h>          /* See NOTES */
+#include <sys/socket.h>
+#include <stdio.h>
+int main()
+{
+	int fd = socket(AF_INET, SOCK_DGRAM, 0);	//udp
+	if(fd > 0)
+	{
+		printf("fd is %d\n", fd);
+	}
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	if(fd > 0)
+	{
+		printf("fd is %d\n", fd);
+	}	
+}
+
+>  输出重定向
+stdin(标准输入   0)
+stdout(标准输出  1)
+stderr(错误输出  2)
+
+linux 系统启动之后(自动创建 stdin stdout stderr， 占用0,1,2)
+
+4 inet_addr
+in_addr_t inet_addr(const char *cp);
+  作用：将点分制的ip地址转换成 整形ip地址
+  点分制ip地址("192.168.1.252"),  占用内存空间是多少?    14byte
+  为了减少存储空间(用一个4字节整数存ip地址 C0 A8 1 FC)
+  例子：
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+int main()
+{
+	int x = inet_addr("192.168.1.252");  //将点分制ip地址转换成网络字节序的ip地址
+	printf("x is %u\n", x);
+	printf("x is %x\n", x);		//FC01A8C0(正好和ip地址相反) 字节序
+}
+
+5 字节序:   
+	大端序  (高位数据存在低地址)
+	小端序  (高位数据存在高地址)
+
+练习： 测试计算机内存是大端序 还是 小端序
+#include <stdio.h>
+int main()
+{
+	int x = 0x12345678;
+	char *p = &x;
+	printf("%x %p\n", *p, p);	//%p 输出地址
+	p++;
+	printf("%x %p\n", *p, p);
+	p++;
+	printf("%x %p\n", *p, p);
+	p++;
+	printf("%x %p\n", *p, p);
+}
+linux@ubuntu:~$ ./a.out
+78 0xbfeac348
+56 0xbfeac349
+34 0xbfeac34a
+12 0xbfeac34b
+结论：PC 小端序
+
+6 如何解决网络字节序和计算机字节序不一致问题(网络字节序正好和主机字节序相反)
+htonl (host to network long)         
+htons (host to network short)
+
+ntohl (network to host long)
+ntohs (network to host short)
+
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+int main()
+{
+	int x = inet_addr("192.168.1.252");  //将点分制ip地址转换成网络字节序的ip地址
+	printf("x is %x\n", x);		//FC01A8C0(正好和ip地址相反) 字节序
+	x = htonl(x);			//ntohl 
+	printf("x is %x\n", x);		//C0A801FC
+}
+
+inet_ntoa (作用:  将网络字节序的ip地址转换成点分制ip地址)
+#include <stdio.h>
+#include <sys/socket.h>
+int main()
+{
+	int a = 0xC0A81EFC;
+	printf("%s\n", inet_ntoa(htonl(a)));
+}
+
+作业:  用共用体验证 计算机是大端序还是小端序
+
+

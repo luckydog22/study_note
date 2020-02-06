@@ -1,0 +1,335 @@
+
+/////////////////////////////////////////////////////////////////轮廓
+3.实现流程：
+输入图像转为灰度图像cvtColor
+使用Canny进行边缘提取（无需进行blur模糊）
+使用findContours寻找轮廓
+使用drawContours绘制轮廓
+
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+
+int main(int argc, char *argv[])
+{
+    Mat src  = imread("lover.jpg");
+
+    if(!src.data)
+    {
+        cout<<"src error"<<endl;
+        return -1;
+    }
+
+    namedWindow("src",CV_WINDOW_AUTOSIZE);
+
+    imshow("src",src);
+
+    Mat dst = Mat::zeros(src.size(),src.type());
+
+    cvtColor(src,dst,CV_BGR2GRAY);
+
+    namedWindow("dst",CV_WINDOW_AUTOSIZE);
+
+    imshow("dst",dst);
+
+    //边缘检测
+    Mat dst1 = Mat::zeros(dst.size(), dst.type());
+
+    Canny(dst, dst1, 30, 100, 3, false);
+
+    namedWindow("dst1",CV_WINDOW_AUTOSIZE);
+
+    imshow("dst1",dst1);
+
+    //发现轮廓
+    vector< vector<Point> > contous;  //定义存储轮廓的集合
+    vector<Vec4i> hie;                           //定义拓扑元素
+    findContours(dst1,contous,hie,RETR_TREE,CHAIN_APPROX_SIMPLE,Point(0,0));
+    //参数一：图片
+    //参数二：轮廓容器
+    //参数三：拓扑容器
+    //参数四：模式
+    //参数五：算法
+    //参数六：位移
+
+    cout<<contous.size()<<endl;
+
+    int i  = 0;
+    Mat dst2  = Mat::zeros(dst1.size(),dst1.type());
+    RNG rng(-1);
+
+    for(i = 0;i<contous.size();i++)
+    {
+        Scalar color = Scalar(rng.uniform(0,255),rng.uniform(0,255),rng.uniform(0,255) );
+        drawContours(dst2,contous,i,color,1,LINE_8,hie,0,Point(0,0));
+        //参数一：要处理的图片对象
+        //参数二：轮廓集合
+        //参数三：循环变量  代表处理第几个轮廓
+        //参数四：轮廓颜色
+        //参数五：线条线宽
+        //参数六：线条种类
+        //参数七：拓扑容器
+        //残数八：层数
+        //参数九：偏移量
+    }
+
+    namedWindow("dst2",CV_WINDOW_AUTOSIZE);
+    
+    imshow("dst2",dst2);
+
+    waitKey(0);
+
+
+    return 0;
+}
+
+/////////////////////////////////////////////// 进度条实现轮廓
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+
+int pro = 3;
+int max1 =30;
+Mat src;
+Mat dst1;
+Mat dst2;
+vector<Vec4i>  v;
+
+
+void fun(int ,void*)
+{
+    Mat dst3;
+    dst2.copyTo(dst3);
+     //绘制直线
+    Vec4i v1;
+    for(int i = 0;i<v.size();i++)
+    {
+         v1 = v[i];
+        //确定俩点
+        Point p1 = Point(v1[0],v1[1]);
+        Point p2 ;
+
+
+        p2.x = v1[0] + pro * 10 ;
+        p2.y = v1[3];
+
+        //确定线条颜色
+        Scalar color = Scalar(0,0,255);
+
+        //把点和颜色关联起来
+        line(dst3,p1,p2,color,2 ,LINE_8,0);
+
+    }
+
+    imshow("dst2",dst3);
+
+}
+
+int main(int argc, char *argv[])
+{
+    Mat src  = imread("2.jpg");
+
+    if(!src.data)
+    {
+        cout<<"src error"<<endl;
+        return -1;
+    }
+
+    namedWindow("src",CV_WINDOW_AUTOSIZE);
+
+    imshow("src",src);
+
+    Mat dst = Mat::zeros(src.size(),src.type());
+
+    cvtColor(src,dst,CV_BGR2GRAY);
+
+    namedWindow("dst",CV_WINDOW_AUTOSIZE);
+
+    imshow("dst",dst);
+
+    //边缘检测
+    Mat dst1 = Mat::zeros(dst.size(), dst.type());
+
+    Canny(dst, dst1, 10, 100, 3, false);
+
+    namedWindow("dst1",CV_WINDOW_AUTOSIZE);
+
+    imshow("dst1",dst1);
+
+
+
+    dst1.copyTo(dst2);
+    // 此容器放入了图里所有线条
+    HoughLinesP (dst2,v,1.0,CV_PI/180.0,30,30.0,0);
+
+    cvtColor(dst2,dst2, CV_GRAY2BGR );
+
+    namedWindow("dst2",CV_WINDOW_AUTOSIZE);
+
+    imshow("dst2",dst2);
+
+    createTrackbar("bar","dst2",&pro,max1,fun);
+
+
+    waitKey(0);
+
+
+    return 0;
+}
+/////////////////////////////////////////////////////年龄识别
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+
+using namespace cv::dnn;  //添加神经网络
+
+//人脸配置文件
+string haar ="haarcascade_frontalface_alt.xml";
+//网络模型
+string ageModel = "age_net.caffemodel";
+//模型配置文件
+string ageTxt = "deploy_age.prototxt";
+
+Mat src;
+
+//识别年龄（只需要给我一个比对的库和图片，就能得到大致年龄段）
+void PreditAge( Net &net, Mat image )
+{
+    //二。因为在进行判定时 要求图片必须是227 * 227 ，必须 转换大小
+    Mat blo = blobFromImage(image,1.0,Size(227,227));
+    //参数一：要识别的图片
+    //参数二：系数  默认1.0
+    //参数三：规定尺寸
+    //但在此处输出行列值的话，都为-1
+    cout<<blo.channels()<<endl;
+    cout<<blo.rows<<endl;
+    cout<<blo.cols<<endl;
+
+    //三。开始对比（由开始层到结束层），同时结束层返回的就是
+   //保存结果的mat对象，有可能不是一行八列
+    net.setInput(blo,"data");
+    Mat prob = net.forward("prob");
+    //在此处拿着固定大小的图片 逐层去比较，会得到一个相似度，
+    //相似度最大的 所对应的像素点置为255（白色）
+    //返回值是一个Mat对象（包含一行八列的图片），
+    //返回值有可能不止包含一行八列  所以有下面的重塑
+
+    //四。重塑（加个保险）
+    Mat probMat = prob.reshape(1,1);
+    //参数一：通道数目
+    //参数二：行数
+
+
+    //五。获得最大对比度（确定是哪个年龄段的人）
+    // 定义最大值点
+    Point res;
+    //取得图片上 最值像素点的坐标
+    minMaxLoc(probMat,NULL,NULL,NULL,&res);
+    //参数一：图片对象
+    //参数二：最小值
+    //参数三：最大值
+    //参数四：最小值点
+    //参数五：最大值点
+    cout<<res.x<<endl;
+
+    vector<string> ages;
+    ages.push_back("0-2");
+    ages.push_back("4-6");
+    ages.push_back("8-13");
+    ages.push_back("15-20");
+    ages.push_back("25-32");
+    ages.push_back("38-43");
+    ages.push_back("48-53");
+    ages.push_back("60+");
+
+   //cout<<ages.at(res.x)<<endl;
+
+putText(src,format("age is %s",ages.at(res.x).c_str()),Point(2,20) ,
+        CV_FONT_HERSHEY_COMPLEX,0.3,Scalar(0,255,0),1,LINE_8  );
+}
+
+int main(int argc, char *argv[])
+{
+    src = imread("t.jpg");
+
+    if(!src.data)
+    {
+        cout<<"src error"<<endl;
+        return -1;
+    }
+
+
+    //1.创建级联分类器
+    CascadeClassifier c;
+    //2.加载xml文件，并判断
+    bool ok = c.load(haar);
+    if(!ok)
+    {
+        cout<<"load false"<<endl;
+        return -1;
+    }
+    //3.直方图均衡化（1.定义一个新的mat对象  2.变为单通道，3.均衡化）
+    Mat dst = Mat::zeros(src.size(),src.type());
+    cvtColor(src,dst,CV_BGR2GRAY);
+    equalizeHist(dst,dst);
+
+    //4.人脸识别 （1.创建据矩形vector容器  ）
+    vector<Rect> faces;
+    c.detectMultiScale(dst,faces,1.1,3,0,Size(24,24));
+    //cout<<faces.size()<<endl;
+
+
+    //一.创建神经网络（整合模型和模型配置文件）
+    Net age_net = readNetFromCaffe( ageTxt,ageModel );
+    //参数一：模型配置文件
+    //参数二：模型
+
+
+    //以下为在原图片上画矩形
+    int i = 0;
+    for(i = 0;i<faces.size();i++)
+    {
+        rectangle(  src,faces[i],Scalar(0,0,255),2,LINE_8 ,0        );
+
+//        image = src(Rect(  ));  二者同理
+        //将框住的图片 进行操作
+        PreditAge( age_net ,src(faces[i])  );
+    }
+
+    namedWindow("src",CV_WINDOW_AUTOSIZE);
+    imshow("src",src);
+    waitKey(0);
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

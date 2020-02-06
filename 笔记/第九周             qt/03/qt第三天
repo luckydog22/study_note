@@ -1,0 +1,502 @@
+二、对话框
+qt中的对话框（窗体）有2个类型：
+  1》用户自己定义的窗体；
+  2》系统已经定义好的窗体，我们可以直接用
+  {
+	  文件对话框   颜色对话框  字体对话框....
+  }
+  
+1.创建对话框
+①　项目中新创建文档
+②　选择模板为Dialog...
+③　在槽函数中创建自定义对话框的对象，在堆空间中创建，可以依托于某个父组件
+④　使用show函数显示
+
+示例： 
+	//显示我的自定义dialog
+    //1.创建出来的dialog对象 包含头文件
+    //里边的参数 指定父亲 如果父亲消亡时，自动消亡子孩子 （内存管理机制）
+    Dialog* d = new Dialog(this);
+    //让窗口显示
+    d->show();
+  
+2.WindowModality选项下有三个选项
+
+模态对话框：即在没有关闭之前，不能再与同一个应用程序的其它窗口进行交互，比如新建项目时弹出的对话框。
+
+示例：
+
+ d->setModal(true);
+ 
+d->windowModality(Qt::WindowModal);
+
+非模态对话框：可以在同一程序中与他交互，如查找替换对话框，默认的对话框为非模态。
+
+示例：
+
+	d->setModal(false);
+	d->windowModality(Qt::NonModal);
+
+Qt::NonModal：非模态窗口
+Qt::WindowModal：模态窗口 对应于父窗口，及祖父窗口，和相关的兄弟窗口
+
+
+3. QT自带标准对话框
+
+头文件：
+#include<QFileDialog>
+#include<QColorDialog>
+#include <QFontDialog>
+
+
+示例：Dialogs
+
+1、标准文件对话框 QFileDialog类  
+打开标准文件对话框并返回用户选中的文件
+
+//查看静态成员函数 getOpenFileName
+
+QString QFileDialog::getOpenFileName
+(
+	QWidget* parent = 0,					//标准文件对话框的父窗口  指定父组件
+	const QString& caption = QString(),		//话框的标题
+	const QString& dir = QString(),			//指定默认的目录，若此处有文件，则文件将是默认选中的文件
+	const QString& filter = QString(),		//过滤器，名称+（），括号里是文件的过滤规则，如*.c，多过滤器之间用;;隔开，默认是无过滤
+	QString* selectFilter = QString(),		//用户选中的参数4中的过滤器将通过参数5返回
+	Options option = 0					//选择显示文件名的格式，默认是同时显示目录和文件名
+);
+
+eg:
+    //文件选择对话框
+    /*QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
+                                                "/home",
+                                 tr("Images (*.png *.xpm *.jpg)"));*/
+    QString selectFilter;
+  QString  fileName =  QFileDialog::getOpenFileName(
+                    this,					//标准文件对话框的父窗口  指定父组件
+                    "选择文件对话框测试",	//对话框的名字，标题
+                    "/",					//指定默认的目录
+                    "C++ files(*.cpp);;C files(*.c);;head files(*.h)",
+											//过滤器名称+（），括号里是文件的过滤规则，如*.c，多过滤器之间用;;隔开，默认是无过滤
+              &selectFilter
+              );
+    qDebug()<<selectFilter;
+    ui->lineEdit_file->setText(fileName);
+
+
+2、标准颜色对话框 QColorDialog类
+QColor getColor
+(
+	const QColor &initial = Qt::white,		//默认选中的颜色
+	QWidget *parent = 0,					//父窗口
+	const QString &title = QString(),		//标题名
+	ColorDialogOptions options = 0			//参数
+);
+eg:
+ QColor color = QColorDialog::getColor(
+                 Qt::blue, //默认颜色
+                 this,
+                 "标准颜色对话框" //对话框的标题
+                );
+  if(color.isValid())//返回颜色是否有效
+  {
+      //设置为什么形状
+       ui->colorDialogFrame->setFrameShape(QFrame::Box);
+
+       //QFream 自动添加背景
+       ui->colorDialogFrame->setAutoFillBackground(true);
+
+       //在你对应的frame控件上显示颜色
+       ui->colorDialogFrame->setPalette(QPalette(color));
+  }
+
+
+3、标准字体对话框 QFontDialog类
+QFont getFont(
+	bool *ok, 							//用户是否选择确定
+	const QFont &initial, 				//默认字体
+	QWidget *parent = 0, 				//父窗口
+	const QString &title = QString(),	//标题
+	FontDialogOptions options = 0		//参数
+);
+
+eg:
+   bool ok;
+    QFont f("宋体");
+    QFont font = QFontDialog::getFont(
+                &ok,
+                f,
+                this,
+                "标准字体对话框"
+                );
+ if(ok)
+ {
+     //先设置要改变的文字 测试文字
+     ui->fontDialogEdit->setText("测试字体");
+     //改变文字的格式
+     ui->fontDialogEdit->setFont(font);
+ }
+
+4、消息对话框 QMessageBox类
+
+//消息对话框上的，按钮
+
+QMessageBox::Ok	  0x00000400	An "OK" button defined with the AcceptRole.
+QMessageBox::Open	0x00002000	An "Open" button defined with the AcceptRole.
+QMessageBox::Save	0x00000800	A "Save" button defined with the AcceptRole.
+QMessageBox::Cancel	0x00400000	A "Cancel" button defined with the RejectRole.
+QMessageBox::Close	0x00200000	A "Close" button defined with the RejectRole.
+QMessageBox::Discard	0x00800000	A "Discard" or "Don't Save" button, depending on the platform, defined with the DestructiveRole.
+QMessageBox::Apply	0x02000000	An "Apply" button defined with the ApplyRole.
+QMessageBox::Reset	0x04000000	A "Reset" button defined with the ResetRole.
+QMessageBox::RestoreDefaults	0x08000000	A "Restore Defaults" button defined with the ResetRole.
+QMessageBox::Help	0x01000000	A "Help" button defined with the HelpRole.
+QMessageBox::SaveAll	0x00001000	A "Save All" button defined with the AcceptRole.
+QMessageBox::Yes	0x00004000	A "Yes" button defined with the YesRole.
+QMessageBox::YesToAll	0x00008000	A "Yes to All" button defined with the YesRole.
+QMessageBox::No	0x00010000	A "No" button defined with the NoRole.
+QMessageBox::NoToAll	0x00020000	A "No to All" button defined with the NoRole.
+QMessageBox::Abort	0x00040000	An "Abort" button defined with the RejectRole.
+QMessageBox::Retry	0x00080000	A "Retry" button defined with the AcceptRole.
+QMessageBox::Ignore	0x00100000	An "Ignore" button defined with the AcceptRole.
+QMessageBox::NoButton	0x00000000	An invalid button.
+
+
+
+1.Question消息框
+int question(
+	QWidget *parent, 
+	const QString &title,
+	const QString& text,			//消息内容
+	StandardButton button0, 		//对话框包含的按钮
+	StandardButton button1			//默认焦点所在按钮
+);
+
+ui->labelMsg->setText("Question message box");
+    
+    int choose = QMessageBox::question(
+                this,
+                "Question消息框",
+                "是否退出Question消息框",
+                QMessageBox::Ok|QMessageBox::Cancel,    //消息框中出现的按钮，可以是多个
+                QMessageBox::Ok);                       //默认焦点所在的按钮
+    
+    switch(choose)
+    {
+    case QMessageBox::Ok:
+        ui->labelMsg->setText("Question/ok");
+        break;
+    case QMessageBox::Cancel:
+        ui->labelMsg->setText("Question/cancel");
+        break;
+    }
+
+2.Infomation消息框
+StandardButton information(
+	QWidget *parent, 
+	const QString &title,
+	const QString& text,
+	StandardButton button0, 
+	StandardButton button1 = NoButton
+);
+
+ ui->labelMsg->setText("Infomation Message Box");
+    int choose = QMessageBox::information(
+                this,
+                "Infomation消息框",
+                "欢迎来到InfomationMsg测试",
+                QMessageBox::Ok,
+                QMessageBox::Ok);
+
+
+3.Warning消息框
+int warning(
+	QWidget *parent, 
+	const QString &title,
+	const QString& text,
+	StandardButton button0, 
+	StandardButton button1
+);
+
+ui->labelMsg->setText("Warning Message Box");
+    int choose = QMessageBox::warning(
+                this,
+                "Warning消息框",
+                "您的文档尚未保存，是否要保存",
+                QMessageBox::Save|QMessageBox::Discard|QMessageBox::Cancel,
+                QMessageBox::Save);
+    
+    switch(choose)
+    {
+    case QMessageBox::Save:
+        ui->labelMsg->setText("Warning/save");
+        break;
+    case QMessageBox::Discard:
+        ui->labelMsg->setText("Warning/discard");
+        break;
+    case QMessageBox::Cancel:
+        ui->labelMsg->setText("Warning/Cancel");
+        break;
+    }
+				
+
+4.About消息框
+void about(
+	QWidget *parent, 
+	const QString &title, 
+	const QString &text
+);
+
+ ui->labelMsg->setText("About Message Box");
+    QMessageBox::about(this,"About消息框","看到这里你还好么？");
+
+5.Critical消息框
+int critical(
+	QWidget *parent, 
+	const QString &title,
+	const QString& text,
+	StandardButton button0, 
+	StandardButton button1
+);
+
+ui->labelMsg->setText("Critical Message Box");
+    int choose  = QMessageBox::critical(
+                this,
+                "Critical消息框",
+                "这是一个Critical消息框测试",
+                QMessageBox::Ok,
+                QMessageBox::NoButton
+                );
+				
+
+6.AboutQt消息框
+void aboutQt(
+	QWidget *parent, 
+	const QString &title = QString()
+);
+
+ ui->labelMsg->setText("AboutQt Message Box");
+    QMessageBox::aboutQt(this,"终于完事了！！");
+
+7.自定义消息框
+QMessageBox customMsg;
+customMsg.addButton();//添加按钮
+customMsg.setWindowTitle();//设置标题
+customMsg.setText();//设置消息内容
+customMsg.setIconPixmap();//设置显示图片
+customMsg.exec();//显示并执行消息框
+customMsg.clickedButton();//获得选中按钮的指针
+
+
+ui->labelMsg->setText("Custom Message Box");
+    QMessageBox customMsg;
+    QPushButton* pyes = customMsg.addButton("yes",QMessageBox::ActionRole);
+    QPushButton* pno = customMsg.addButton("no",QMessageBox::ActionRole);
+    QPushButton* pcancel = customMsg.addButton(QMessageBox::Cancel);
+    
+    customMsg.setWindowTitle("Custom消息框");
+    customMsg.setText("这是我们自定义的消息框!");
+    customMsg.setIconPixmap(QPixmap(":/images/farsight.png"));
+    
+    customMsg.exec();
+    if(customMsg.clickedButton() == pyes)
+    {
+        ui->labelMsg->setText("Custom/yes");
+    }
+    else if(customMsg.clickedButton() == pno)
+    {
+        ui->labelMsg->setText("Custom/no");
+    }
+    else if(customMsg.clickedButton() == pcancel)
+    {
+        ui->labelMsg->setText("Custom/cancel");
+    }
+
+
+
+三、主窗口
+
+示例：MainWindow
+
+1、QActon 动作类   菜单和工具栏内的具体条目，负责完成具体功能
+1.构造函数
+QAction(
+	const QIcon &icon, 			//图标
+	const QString &text, 		//名字
+	QObject* parent				//父窗口
+);
+2.设置快捷键
+void setShortcut(const QKeySequence &shortcut);//参数传递QString
+
+2、QMenu 菜单类
+
+1.QMenuBar菜单栏类，窗口默认创建，调用主窗口函数QMenuBar *menuBar() const 获得当前窗口的QMenuBar对象
+
+   1） 向QMenuBar对象添加菜单    
+        QMenu *addMenu(const QString &title)
+		
+   2） 向菜单QMenu对象中添加QAction		
+       void addAction(QAction *action)
+	 
+eg:
+	//添加到菜单中
+	pFileMenu = menuBar()->addMenu("文件");
+	//创建一个活动
+	QAction* paf1 = new QAction(QIcon(":/heads/head1.jpg"), "file1", this);
+	 //设置快捷键
+	paf1->setShortcut(QString("Ctrl+a"));
+	//绑定信号槽，当活动1触发快捷键或被点击触发时跳到槽函数中
+   connect(paf1, SIGNAL(triggered()), this, SLOT(file1Clicked()));	 
+	 
+    pFileMenu->addAction(paf1);
+	
+3、QToolBar 工具栏类
+
+   1） QToolBar工具栏类：
+        调用主窗口函数 
+		QToolBar *addToolBar(const QString &title) 创建QToolBar对象
+   
+   2） 向QToolBar对象添加QAction对象  
+       void addAction(QAction *action)
+	   
+举例:1.挂腊肠 QMenuBar菜单栏类 相当于绳子
+  2.QMenu 腊肠  menuBar()->addMenu("文件");
+  3.每一个腊肠 每一个action ：pFileMenu->addAction(paf1);
+
+代码示例：
+void MainWindow::createMenus()
+{
+    QAction* paf1 = new QAction(QIcon(":/heads/head1.jpg"), "file1", this);
+    paf1->setShortcut(QString("Ctrl+a"));
+    connect(paf1, SIGNAL(triggered()), this, SLOT(file1Clicked()));
+    
+    QAction* paf2 = new QAction(QIcon(":/heads/head2.jpg"), "file2", this);
+    paf2->setShortcut(QString("Ctrl+b"));
+    connect(paf2, SIGNAL(triggered()), this, SLOT(file2Clicked()));
+    
+    QAction* paf3 = new QAction(QIcon(":/heads/head3.jpg"), "file3", this);
+    paf3->setShortcut(QString("Ctrl+c"));
+    connect(paf3, SIGNAL(triggered()), this, SLOT(file3Clicked()));
+    
+    pFileMenu = menuBar()->addMenu("文件");
+    pFileMenu->addAction(paf1);
+    pFileMenu->addAction(paf2);
+    pFileMenu->addAction(paf3);
+    
+    QAction* pae1 = new QAction(QIcon(":/heads/head4.jpg"), "edit1", this);
+    pae1->setShortcut(QString("Ctrl+d"));
+    connect(pae1, SIGNAL(triggered()), this, SLOT(edit1Clicked()));
+    
+    QAction* pae2 = new QAction(QIcon(":/heads/head5.jpg"), "edit2", this);
+    pae2->setShortcut(QString("Ctrl+e"));
+    connect(pae2, SIGNAL(triggered()), this, SLOT(edit2Clicked()));
+    
+    QAction* pae3 = new QAction(QIcon(":/heads/head6.jpg"), "edit3", this);
+    pae3->setShortcut(QString("Ctrl+f"));
+    connect(pae3, SIGNAL(triggered()), this, SLOT(edit3Clicked()));
+    
+    pEditMenu = menuBar()->addMenu("编辑");
+    pEditMenu->addAction(pae1);
+    pEditMenu->addAction(pae2);
+    pEditMenu->addAction(pae3);
+}
+
+void MainWindow::createToolBars()
+{
+    pFileToolBar = addToolBar("文件");
+    pFileToolBar->addActions(pFileMenu->actions());
+    
+    pEditToolBar = addToolBar("编辑");
+    pEditToolBar->addActions(pEditMenu->actions());
+}
+
+void MainWindow::file1Clicked()
+{
+    QMessageBox::about(this, "", "file1 click");
+}
+
+
+
+三、事件
+1./0107Event
+
+示例：Events
+
+1、鼠标事件
+1.重写函数 属于mainwindow中的
+
+1)包含头文件：#include <QMouseEvent>
+2）重写四个函数
+
+//鼠标按键按压事件
+void mousePressEvent(QMouseEvent* e);
+//鼠标按键释放事件
+void mouseReleaseEvent(QMouseEvent* e);
+//鼠标按键移动事件
+void mouseMoveEvent(QMouseEvent* e);
+//鼠标双击事件
+void mouseDoubleClickEvent(QMouseEvent* e);
+
+2. QMouseEvent鼠标事件对象，x() y()函数获得鼠标的位置
+
+3. 实时跟踪鼠标移动的位置 QWidget::setMouseTracking(bool enable) 设置为true
+
+eg:
+	 setMouseTracking(true);//实时跟踪鼠标位置
+    //需要将centralWidget的实时跟踪也开启
+    ui->centralWidget->setMouseTracking(true);
+
+eg:
+ //获得鼠标所在位置的x y坐标
+    int x = e->x();
+    int y = e->y();
+    //通过button()方法的返回值来判断 点击的是鼠标哪个按键
+    switch (e->button()) {
+    case Qt::LeftButton:
+
+         ui->label_mouserelease->setText(QString("抬起鼠标 左键 x：%1  y: %2").arg(x).arg(y));
+        break;
+
+2、键盘事件
+1） 包含头文件 #include <QKeyEvent>
+
+1.重写函数
+void keyPressEvent(QKeyEvent* e);
+
+2.QKeyEvent键盘事件
+ 1） Qt::KeyboardModifiers modifiers() const; 获得修饰键
+		Qt::NoModifier	无修饰
+		Qt::ControlModifier Ctrl修饰
+		Qt::ShiftModifier		Shift修饰
+		Qt::AltModifier			Alt修饰
+2） int key() const;	获得按键值
+
+具体看0107event
+
+	
+3、定时事件
+包含头文件  #include <QTimerEvent>
+
+1）重写函数（槽函数具体处理事件）
+void timerEvent(QTimerEvent* e);
+
+2）启动定时器
+int startTimer(						//返回值  定时器id
+	int interval, 					//定时器事件  默认为毫秒			
+	Qt::TimerType timerType = Qt::CoarseTimer	//定时器精度
+);
+
+3）关闭定时器
+void killTimer(int id);	
+
+具体看0107event
+
+1./按 按钮开启定时
+2./定时事件处理  你想要的操作
+3./关闭定时器
+
+
+
+
+
+

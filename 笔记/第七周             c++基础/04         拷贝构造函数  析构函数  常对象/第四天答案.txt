@@ -1,0 +1,263 @@
+/**********************************************************
+
+			day4
+********************************************************/
+//练习：
+1、Student类
+1.私有成员score，name
+2.构造函数传入score，name
+3.公有函数setScore给score赋值
+4.公有函数show显示成绩和名字
+2、Teacher类
+1.Student* students[5]私有数组保存学生对象
+2.公有构造函数，给students数组赋值
+3.公有函数randHappyBoy()随机抽取一个学生
+4.公有函数hehe()将随机抽取的这个学生改为0分
+5.公有函数show()显示最终的所有学生成绩
+
+
+
+
+///////////////////////////////////////////////////////11111111111111111111111111
+#include <iostream>
+#include <string>
+#include <cstdlib>
+
+using namespace std;
+
+class Student
+{
+private:
+	int score;
+	string name;
+public:
+	Student(int score, string name):score(score),name(name){}
+	void setScore(int score)
+	{
+		this->score = score;
+	}
+
+	void show()
+	{
+		cout<<name<<"  "<<score<<endl;
+	}
+};	
+----------------------------------------------------------------------
+#define STUDENT_NUM 5/////////////换成宏定义
+class Teacher
+{
+private:
+	Student* students[STUDENT_NUM];
+public:
+	Teacher()
+	{
+		srand(time(0));
+		string names[] = {"小明","小强","小红","小绿","小兰"};
+		for(int i = 0;i < STUDENT_NUM;i++)
+		{
+			students[i] = new Student(rand()%100,names[i]);
+		}
+	}
+
+	Student& randHappyBoy()
+	{
+		return *students[rand()%STUDENT_NUM];
+	}
+
+	void hehe()
+	{
+		randHappyBoy().setScore(0);
+	}
+
+	void show()
+	{
+		for(int i = 0;i < STUDENT_NUM;i++)
+		{
+			students[i]->show();
+		}
+	}
+};
+--------------------------------------------------
+int main()
+{
+	Teacher* pt = new Teacher();
+	pt->hehe();
+	pt->show();
+}
+
+////////////////////////////////////////////////////////22222222222222222222222222
+student.h
+#ifndef STUDENT_H
+#define STUDENT_H
+
+#include <string>
+
+using namespace std;
+
+class Student
+{
+public:
+	Student(int score, string name);
+	void setScore(int score);
+	void show();
+private:
+	int score;
+	string name;
+};
+
+#endif
+---------------------------------------------
+student.cpp
+#include "student.h"
+#include <iostream>
+
+using namespace std;
+
+Student::Student(int score, string name):
+	score(score),
+	name(name)
+{}
+
+void Student::setScore(int score)
+{
+	this->score = score;
+}
+
+void Student::show()
+{
+	cout<<name<<" "<<score<<endl;
+}
+---------------------------------------------------
+teacher.h
+#ifndef TEACHER_H
+#define TEACHER_H
+
+#include "student.h"
+#define STUDENT_NUM 5
+
+class Teacher
+{
+public:
+	Teacher();
+	Student* randHappyBoy();
+	void hehe(Student* happyBoy);
+	void show();
+private:
+	Student* students[STUDENT_NUM];
+};
+
+#endif
+------------------------------------------------------
+teacher.cpp
+#include "teacher.h"
+#include <ctime>
+#include <cstdlib>
+
+Teacher::Teacher()
+{
+	students[0] = new Student(80, "流川枫");
+	students[1] = new Student(59, "樱木花道");
+	students[2] = new Student(88, "赤木刚宪");
+	students[3] = new Student(70, "三井寿");
+	students[4] = new Student(60, "宫城良田");
+	srand(time(0));
+}
+
+Student* Teacher::randHappyBoy()
+{
+	return students[rand()%STUDENT_NUM];
+}
+/*
+Student& Teacher::randHappyBoy()
+{
+	return* students[rand()%STUDENT_NUM];
+}
+void Teacher::hehe(Student& happyBoy)
+{
+	happyBoy.setScore(0);
+}
+
+
+*/
+void Teacher::hehe(Student* happyBoy)
+{
+	happyBoy->setScore(0);
+}
+
+void Teacher::show()
+{
+	for(int i = 0;i < STUDENT_NUM;i++)
+	{
+		students[i]->show();
+	}
+}
+----------------------------------------------------------
+main
+#include <iostream>
+#include "teacher.h"
+#include "student.h"
+
+using namespace std;
+
+int main()
+{
+	Teacher t;
+	Student* happyBoy = t.randHappyBoy();
+	t.hehe(happyBoy);
+	/*
+	Student& happyBoy = t.randHappyBoy();
+	t.hehe(happyBoy);
+	*/
+	t.show();
+	return 0;
+}
+
+
+//练习：
+设计一个Book类包含图书的书名，作者成员 其中：书名和作者用字符型指针
+	1.构造函数为作者及书名指针开辟空间并将传入的书名和作者拷贝到数组中Book(char* name, char* author)
+	2.一个析构函数，删除书名和作者数组
+	3.成员函数print()输出数据
+
+#include <iostream>
+#include <cstring>
+
+using namespace std;
+
+class Book
+{
+private:
+	char* name;
+	char* author;
+public:
+	Book(const char* name, const char* author)//  不加const 会报警告
+	{
+		this->name = new char[strlen(name)+1];
+		this->author = new char[strlen(author)+1];
+		strcpy(this->name, name);
+		strcpy(this->author, author);
+	}
+
+	~Book()
+	{
+		delete[] name;
+		delete[] author;
+	}
+
+	void print()
+	{
+		cout<<name<<" "<<author<<endl;
+	}
+};
+
+int main()
+{
+	Book* b = new Book("斗破苍穹","天蚕土豆");
+	b->print();
+	delete b;
+	///////////////////////////////自动调用析构函数
+	{
+		Book b ("斗破苍穹","天蚕土豆");
+		b.print();
+	}
+}

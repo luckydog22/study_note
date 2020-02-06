@@ -1,0 +1,435 @@
+************************************************************************
+day3
+********************************************************************
+//练习：定义类 向数组中输入整数 并求出数组元素中的最大值，最小值和平均值
+1.数组成员变量private修饰
+2.成员函数input输入数组的值和数组长度  动态创建（根据当前的逻辑创建）
+3.成员函数max
+4.成员函数min
+5.成员函数agv
+
+#include <iostream>
+
+using namespace std;
+
+class Array
+{
+private:
+	int* arr;
+	int length;
+public:
+	void input()
+	{
+		cout<<"输入数组长度"<<endl;
+		cin>>length;
+		arr = new int[length];
+		for(int i = 0;i < length;i++)
+		{
+			cout<<"输入数字"<<endl;
+			cin>>arr[i];
+		}
+	}
+
+	int max()
+	{
+		int m = arr[0];
+		for(int i = 1;i < length;i++)
+		{
+			if(arr[i] > m)
+			{
+				m = arr[i];
+			}
+		}
+		return m;
+	}
+
+	int min()
+	{
+		int m = arr[0];
+		for(int i = 1;i < length;i++)
+		{
+			if(arr[i] < m)
+			{
+				m = arr[i];
+			}
+		}
+		return m;
+	}
+
+	int agv()
+	{
+		int sum = 0;
+		for(int i = 0;i < length;i++)
+		{
+			sum += arr[i];
+		}
+		return sum/length;
+	}
+};
+
+int main()
+{
+	Array a;
+	a.input();
+	cout<<a.max()<<endl;
+	cout<<a.min()<<endl;
+	cout<<a.agv()<<endl;
+	return 0;
+}
+
+
+//练习：定义一个类，数据成员：length,width,heigh （分文件）
+成员函数如下功能：
+1.由键盘输入长方体的长宽高input
+2.计算长方体体积volume
+3.输出长方体体积show
+
+头文件
+#ifndef CUBE_H
+#define CUBE_H
+
+class Cube
+{
+public:
+	void input();
+	int volume();
+	void show();
+private:
+	int length;
+	int width;
+	int height;
+};
+
+#endif
+
+源文件
+#include "cube.h"
+#include <iostream>
+
+using namespace std;
+
+void Cube::input()
+{
+	cout<<"输入 长宽高"<<endl;
+	cin>>length>>width>>height;
+}
+
+int Cube::volume()
+{
+	return length*width*height;
+}
+
+void Cube::show()
+{
+	int v = volume();
+	cout<<"v:"<<v<<endl;
+}
+
+main
+#include <iostream>
+#include "cube.h"
+
+using namespace std;
+
+int main()
+{
+	Cube c;
+	c.input();
+	c.show();
+	return 0;
+}
+
+//练习：计算长方形周长 构造函数实现长宽赋值（构造函数带参数）
+ #include <iostream>
+
+using namespace std;
+
+class Cube
+{
+private:
+	int length;
+	int width;
+public:
+	Cube(int l, int w)
+	{
+		length = l;
+		width = w;
+	}
+
+	int cir()
+	{
+		return (length+width)*2;
+	}
+};
+
+int main()
+{
+	Cube c(10, 20);
+	cout<<c.cir()<<endl;
+	return 0;
+}
+
+练习：实现一个分数类F  功能：F f1(3,4) 显示结果:3/4 
+1.构造函数传入参数
+2.成员函数show显示
+
+头文件
+#ifndef F_H
+#define F_H
+
+class F
+{
+public:
+	F(int s, int m);
+	void show();
+private:
+	int son;
+	int mother;
+};
+
+#endif
+
+源文件
+
+#include "f.h"
+#include <iostream>
+
+using namespace std;
+
+F::F(int s, int m):son(s),mother(m)
+{
+
+}
+
+void F::show()
+{
+	cout<<son<<"/"<<mother<<endl;
+}
+
+main
+#include <iostream>
+#include "f.h"
+
+using namespace std;
+
+
+int main()
+{
+	F f(3, 4);
+	f.show();
+	return 0;
+}
+
+//练习2：键盘输入时间 显示输入时间的下一秒 Timer
+1.定义成员变量 h m s
+2.成员函数go 改变h m s 的值
+3.成员函数show显示下一秒的时间
+
+头文件
+#ifndef TIMER_H
+#define TIMER_H
+
+class Timer
+{
+public:
+	Timer(int h, int m, int s);
+	void go();
+	void show();
+private:
+	int hour;
+	int min;
+	int sec;
+};
+
+#endif
+源文件
+#include "timer.h"
+#include <iostream>
+
+using namespace std;
+
+Timer::Timer(int h, int m, int s):
+	hour(h),
+	min(m),
+	sec(s)
+{
+}
+
+void Timer::go()
+{
+	sec++;
+	min += sec/60;
+	hour += min/60;
+
+	sec %= 60;
+	min %= 60;
+	hour %= 24;
+}
+
+void Timer::show()
+{
+	cout<<hour<<":"<<min<<":"<<sec<<endl;
+}
+
+main
+#include <iostream>
+#include "timer.h"
+
+using namespace std;
+
+
+int main()
+{
+	int h, m, s;
+	cin>>h>>m>>s;
+	Timer t(h, m, s);
+
+	while(true)
+	{
+		t.go();
+		t.show();
+		sleep(1);
+	}
+	return 0;
+}
+
+//练习：Person类，包含私有属性：姓名name，性别bool gender，年龄age，另一个对象的指针 Person *lover;
+		1.构造函数初始化成员变量
+		2.成员函数setAge给年龄赋值
+		3.成员函数marry(Person& other)    输出name"和"other.name"喜结良缘!";
+		4.成员函数show(); 输出"大家好！我是"gender，name"，今年"age;
+						  输出"爱人是:"lover->name;
+
+private:
+		string name;
+		bool gender;
+		int age;
+		Person *lover;
+		
+#include<iostream>
+using namespace std;
+class Person 
+{
+	public:
+		Person(string n,bool g=true);
+
+		void setAge(int year);
+		void show();
+		void marry(Person &other);
+	private:
+		string name;
+		bool gender;
+		int age;
+		Person *lover;
+};
+
+Person::Person(string n,bool g)
+{
+			name=n;
+			gender = g;
+			age = 0;
+			lover=NULL;
+}
+
+void Person::setAge(int year)
+{
+	this->age = year;
+}
+
+void Person::show()
+{
+	cout<<"大家好！我是"<<(gender?"帅哥":"美女  ")<<name<<"，今年"<<age<<endl;
+	cout<<"爱人是:"<<lover->name<<endl;
+}
+
+void Person::marry(Person& other)
+{
+	lover= &other; 
+	other.lover = this;//this 指针 指向当前对象
+	cout<<name<<"和"<<other.name<<"喜结良缘!"<<endl;
+
+	cout<<this<<endl;
+}
+int main()
+{
+	Person b("邓超",true);
+	Person a("孙俪",false);
+	a.setAge(20);
+	b.setAge(38);
+
+	a.marry(b);
+	a.show();
+	//b.marry(a);
+	b.show();
+}
+
+//练习3：定义扑克类，私有属性color，point，创建54张牌存入数组中
+
+头文件
+#ifndef POKER_H
+#define POKER_H
+
+#include <string>
+
+using namespace std;
+
+class Poker
+{
+public:
+	Poker(string c, string p);
+	Poker(string c);
+	string toString();
+private:
+	string color;
+	string point;
+};
+
+#endif
+源文件
+
+#include "poker.h"
+
+Poker::Poker(string c, string p):
+	color(c),
+	point(p)
+{}
+
+Poker::Poker(string c):
+	color(c),
+	point("")
+{}
+
+string Poker::toString()
+{
+	return color+point;
+}
+
+main
+#include <iostream>
+#include "poker.h"
+
+using namespace std;
+
+
+int main()
+{
+	Poker** pokers = new Poker*[54];
+	string colors[4] = {"红桃","黑桃","方块","草花"};
+	string points[13] = {"A","2","3","4","5","6","7","8","9","10","J","Q","K"};
+	int index = 0;
+	for(int i = 0;i < 4;i++)
+	{
+		for(int j = 0;j < 13;j++)
+		{
+			pokers[index++] = new Poker(colors[i], points[j]);
+		}
+	}
+	pokers[index++] = new Poker("大王");
+	pokers[index] = new Poker("小王");
+
+	for(int i = 0;i < 54;i++)
+	{
+		cout<<pokers[i]->toString()<<endl;
+	}
+	return 0;
+}

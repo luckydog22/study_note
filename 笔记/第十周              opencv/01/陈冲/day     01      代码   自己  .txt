@@ -1,0 +1,401 @@
+
+练习 01：图片查看器：1：上一张     2：下一张
+
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+#include <vector>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int main(int argc, char *argv[])
+{
+   vector<Mat> mat_1;
+
+   mat_1.push_back(imread("age.jpg"));  //添加图片对象
+   mat_1.push_back(imread("head2.jpg"));
+   mat_1.push_back(imread("head3.jpg"));
+   mat_1.push_back(imread("head4.jpg"));
+   mat_1.push_back(imread("head5.jpg"));
+
+   if(mat_1.empty() == true)  //容错处理
+   {
+       cout<<"error"<<endl;
+       return -1;
+   }
+   else
+   {
+       cout<<"success"<<endl;
+   }
+
+   namedWindow("my_window",CV_WINDOW_AUTOSIZE); //创建窗口,并命名窗口名字
+
+   int i = 0;  //vector下标
+   char c = 0;
+   while(1)
+   {
+       imshow("my_window",mat_1[i]);  //显示图片
+       c = waitKey(0);   //获得键入字符
+       if(c == '1')
+       {
+           i--;
+           if(i == -1)
+           {
+               i = mat_1.size()-1;
+           }
+       }
+       if(c == '2')
+       {
+           i++;
+           i %= mat_1.size();
+       }
+   }
+
+   return 0;
+}
+
+练习 02：改变图像的色彩空间为灰度，并且存储到debug目录
+
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+#include <vector>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int main(int argc, char *argv[])
+{
+   Mat mat_1 = imread("age.jpg");
+   Mat mat_2(Mat::zeros(mat_1.size(),mat_1.type()));  //调用静态函数zero() 设置图片的大小 和类型
+
+   namedWindow("my_window1",CV_WINDOW_AUTOSIZE);
+   namedWindow("my_window2",CV_WINDOW_AUTOSIZE);
+
+   cvtColor(mat_1,mat_2,CV_BGR2GRAY);  //灰度化
+
+   imshow("my_window1",mat_1);
+   imshow("my_window2",mat_2);
+
+   waitKey(0);  //阻塞等待键入
+
+   return 0;
+}
+
+练习 03:读取图片并且复制3份：testtest0.jpg testtest1.jpg testtest2.jpg
+
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+#include <vector>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int main(int argc, char *argv[])
+{
+   Mat mat_1 = imread("age.jpg");
+
+   namedWindow("my_window1",CV_WINDOW_AUTOSIZE);
+
+   imshow("my_window1",mat_1);
+
+   char c;
+   for(int i=0; i<5; i++)
+   {
+       c = aitKey(0);
+       if(c == '1')
+            imwrite(format("111%d.jpg",i),mat_1); // 写入图片到同debug目录下
+       else
+           continue;
+   }
+
+   waitKey(0);  //阻塞等待键入
+
+   return 0;
+}
+
+
+练习 04：
+ （1）Mat(Size size, int type) 创建Mat对象填充红色
+ （2）创建3*3的红色的图片
+ （3）获得Mat图片的行、列、通道
+
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+#include <vector>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int main(int argc, char *argv[])
+{
+   Mat mat_1 = imread("age.jpg");
+
+   Mat mat_2(mat_1.size(),mat_1.type());  //构造函数参数为size type
+   mat_2 = Scalar(0,0,255);
+
+   Mat mat_3 = Mat(3,3,CV_8UC3,Scalar(255,0,0));  //构造函数参数有 row col type 颜色对象
+
+   namedWindow("window1",CV_WINDOW_AUTOSIZE);
+   namedWindow("widnow2",CV_WINDOW_AUTOSIZE);
+   namedWindow("window3",CV_WINDOW_AUTOSIZE);
+
+   imshow("window1",mat_1);
+   imshow("window2",mat_2);
+   imshow("window3",mat_3);
+
+   //Mat mat_4 = Mat_<char>(3,3);  //像素是系统分配
+   Mat mat_4 = ( Mat_<char>(3,3)<<0,-1,0,-1,5,-1,0,-1,0 );  //单通道
+
+   cout<<mat_4.channels()<<endl;   //通道
+   cout<<mat_4.rows<<endl;         //行
+   cout<<mat_4.cols<<endl;         //列
+
+   cout<<mat_4<<endl;  //输出图像矩阵（像素）
+
+   namedWindow("window");
+   imshow("window4",mat_4);
+
+   waitKey(0);
+
+   return 0;
+}
+
+练习 05
+  （1）更改bgr视频为gray视频输出
+  （2）播放视频文件，输入g记录存储一张视频里面的一帧（即一张图片）
+
+
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+#include <vector>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int main(int argc, char *argv[])
+{
+    VideoCapture v;  //定义视频采集类
+
+    if(v.open("01.mp4") == false)  //打开视频  打开过后 V 就相当于视频
+    {
+        cout<<"v open error "<<endl;
+        return -1;
+    }
+
+    Mat mat_1;   //保存视频中的图片
+    Mat mat_2;   //保存灰度化的图片
+
+    namedWindow("window",CV_WINDOW_AUTOSIZE);  //创建窗口显示
+
+    char c;
+
+    while(v.read(mat_1) == true)   //将视频中的图片读到mat_1中 一次读一张
+    {
+        c = waitKey(30);
+        if(c == 32)
+        {
+            break;
+        }
+        if(c == 'k')
+        {
+            imwrite("001.jpg",mat_1);  //保存图片
+        }
+        cvtColor(mat_1,mat_2,CV_BGR2GRAY);  //灰度化
+
+        imshow("window",mat_2);  //图片在窗口显示
+    }
+
+    return 0;
+}
+  
+练习 06： 锐化（视频）图片：单通道（灰度化的图片）
+
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+#include <vector>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int main(int argc, char *argv[])
+{
+    VideoCapture v;  //定义视频采集类
+
+    if(v.open("01.mp4") == false)  //判断是否打开视频
+    {
+        cout<<"v error "<<endl;
+        return 0;
+    }
+
+    Mat mat_1;  //接收读出来的视频的图片
+    Mat mat_2;  //灰度化后的图片
+
+    namedWindow("window",CV_WINDOW_AUTOSIZE);
+
+    uchar *pre = NULL;       //上一行
+    uchar *cur = NULL;       //当前行
+    uchar *next = NULL;      //下一行
+   
+    uchar *output = NULL;    //锐化后的每一个像素
+
+    char c = 0 ;
+    while(v.read(mat_1) == true)   //读取视频中的图片
+    {
+        c = waitKey(30);
+        if(c == 32)
+        {
+            break;
+        }
+
+        cvtColor(mat_1,mat_2,CV_BGR2GRAY);    //灰度化
+
+        Mat mat_dst = Mat::zeros(mat_2.size(),mat_2.type());   //锐化后的图片（在当前行为空）
+
+        for(int row = 1; row < mat_2.rows-1; row++)  //遍历行
+        {
+            pre = mat_2.ptr<uchar>(row-1);
+            cur = mat_2.ptr<uchar>(row);
+            next = mat_2.ptr<uchar>(row+1);
+
+            output = mat_dst.ptr<uchar>(row);
+
+            for(int col = 1; col < mat_2.cols-1; col++)  //遍历列
+            {
+                output[col] = saturate_cast<uchar>( 5*cur[col] - (pre[col]+next[col]+cur[col-1]+cur[col+1]) );   //提高对比度（锐化像素）
+            }
+        }
+       imshow("window",mat_dst);  //显示锐化后的图片
+     }
+    
+    return 0;
+}
+  
+ 练习 07： 锐化（视频）图片：单通道（灰度化的图片）
+  （1）没有调用系统函数
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+#include <vector>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int main(int argc, char *argv[])
+{
+    VideoCapture v;  //定义视频采集类
+
+    if(v.open("01.mp4") == false)  //判断是否打开视频
+    {
+        cout<<"v error "<<endl;
+        return 0;
+    }
+
+    Mat mat_1;  //接收读出来的视频的图片
+    Mat mat_2;  // 获得通道数的图片
+
+    namedWindow("window",CV_WINDOW_AUTOSIZE);
+
+    uchar *pre = NULL;       //上一行
+    uchar *cur = NULL;       //当前行
+    uchar *next = NULL;      //下一行
+
+    uchar *output = NULL;    //锐化后的每一个像素
+
+    v.read(mat_2);
+    int off = mat_2.channels();
+
+    char c = 0 ;
+    while(v.read(mat_1) == true)   //读取视频中的图片
+    {
+        c = waitKey(30);
+        if(c == 32)
+        {
+            break;
+        }
+
+       // cvtColor(mat_1,mat_2,CV_BGR2GRAY);    //灰度化
+
+        Mat mat_dst = Mat::zeros(mat_2.size(),mat_2.type());   //锐化后的图片（在当前行为空）
+
+        for(int row = 1; row < mat_1.rows-1; row++)  //遍历行
+        {
+            pre = mat_1.ptr<uchar>(row-1);
+            cur = mat_1.ptr<uchar>(row);
+            next = mat_1.ptr<uchar>(row+1);
+
+            output = mat_dst.ptr<uchar>(row);
+
+            for(int col = off; col < off*mat_1.cols-off; col++)  //遍历列
+            {
+                output[col] = saturate_cast<uchar>( 5*cur[col] - (pre[col]+next[col]+cur[col-off]+cur[col+off]) );   //提高对比度（锐化像素）
+            }
+        }
+       imshow("window",mat_dst);  //显示锐化后的图片
+     }
+
+    return 0;
+}
+
+ （2）调用系统函数  filter2D(src, dst, src.depth(), kernel);  //将图片锐化
+
+#include "mainwindow.h"
+#include <QApplication>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <math.h>
+#include<opencv2/face.hpp>
+#include <vector>
+using namespace  cv;
+using namespace cv::face;
+using namespace std;
+int main(int argc, char *argv[])
+{
+    VideoCapture v;  //定义视频采集类
+
+    if(v.open("01.mp4") == false)  //判断是否打开视频
+    {
+        cout<<"v error "<<endl;
+        return 0;
+    }
+
+    Mat mat_1;  //接收读出来的视频的图片
+    Mat mat_2;  //锐化后的图片
+
+    namedWindow("window",CV_WINDOW_AUTOSIZE);
+
+    Mat kernel = (Mat_<char>(3,3) << 0,-1,0,-1,5,-1,0,-1,0);  //设置掩膜核心  不知道原理  记住就行
+
+    char c = 0 ;
+    while(v.read(mat_1) == true)   //读取视频中的图片
+    {
+        c = waitKey(30);
+        if(c == 32)
+        {
+            break;
+        }
+        
+        filter2D(mat_1,mat_2,mat_1.depth(),kernel);  //锐化图片
+
+        imshow("window",mat_2);  //显示锐化后的图片
+     }
+
+    return 0;
+}
