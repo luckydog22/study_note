@@ -1,0 +1,104 @@
+第五天 (2学时)
+1 复习
+2 共用体占用字节数问题
+struct A
+{
+	char c1;	//c1   1字节， 3个字节空单元(存不下a)
+	int a;		//a    4
+	float b;	//b    4
+	char c2;	//c2   1 计算机为了存取速度更快(加了3个字节空单元)
+};// sizeof(struct A) ?  16
+
+struct A
+{
+	char c1;
+	char c2;
+	int a;
+	float b;
+};//	sizeof(struct A) ? 12
+short  d; //放c2后面，没有空单元
+
+typedef union	//共用体是  多个变量共用一块空间
+{
+	short x;
+	char c[2];
+}test_t;	//占用的内存空间是  最大的那个变量占用的空间(没有对齐的问题)	
+
+3 重新讲解端口号作用及常见端口号
+端口号   (tcp/ip协议栈(操作系统)用来识别是哪个应用)
+1)  范围?   (1 - 65535)
+2)  通用的协议使用的端口号范围？  (1 - 1023)
+3)  http  ?   80
+4)  ftp   ?   21
+
+4 udp发送端的实现
+1) 创建socket
+	socket(AF_INET, SOCK_DGRAM, 0);
+2) 指定对方的ip地址和端口号(接收方)
+	struct sockaddr_in youaddr;
+	youaddr.sin_family = AF_INET;
+	youaddr.sin_port = htons(33333);
+	youaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+3)发送数据
+	ssize_t sendto(int sockfd, const void *buf, size_t len, int flags,
+                      const struct sockaddr *dest_addr, socklen_t addrlen);
+	sockfd : socket的返回值
+	buf    : 将要发送的数据存放的位置
+	len    : 将要发送的数据长度
+	flags  :  0        (非0:   非阻塞后面发送接收，后面讲)
+	dest_addr ： 对方的ip地址和端口号
+	addrlen[入参]   : sockaddr长度  
+例: sendto(fd, buf, sizeof(buf), 0, (struct sockaddr *)&youaddr, sizeof(youaddr))
+4)关闭socket
+	close(fd);
+///send.c
+#include <netinet/in.h>
+#include <stdio.h>
+#include <sys/socket.h>
+#include <string.h>
+int main()
+{
+	char buf[100] = "hello world";
+	struct sockaddr_in youaddr;
+	int len;
+	int fd = socket(AF_INET, SOCK_DGRAM, 0);
+	youaddr.sin_family = AF_INET;
+	youaddr.sin_port = htons(33333);
+	youaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 	//192.168.30.252	
+	sendto(fd, buf, strlen(buf) + 1, 0, (struct sockaddr *)&youaddr, sizeof(youaddr));
+}				//  + 1   加 '\0'   strlen("hello")--> 5  + '\0'  所以+1
+
+没bind (sendto用的哪个端口号?  linux系统自动为程序分配了一个端口号)
+测试: 方法1
+sudo nc -ul 127.0.0.1 33333    //接收端
+gcc send.c -o send            //发送端 ./send
+方法2:
+gcc recv.c -o recv            //用两个终端  ./recv      ./send
+
+5 练习： 接收端和发送端组合在一起
+写一个接收端程序(收到数据，就回发(谁发给我，我就发给谁) ,  recvfrom的第5个参数  )
+
+nc -u 127.0.0.1 33333 (发送)
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+int main()
+{
+	char buf[100] = { 0 };
+	struct sockaddr_in youaddr;
+	int len;
+	int fd = socket(AF_INET, SOCK_DGRAM, 0);
+	struct sockaddr_in myaddr;
+	myaddr.sin_family = AF_INET;
+	myaddr.sin_port = htons(33333);
+	myaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 	//192.168.30.252
+	bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr));	
+	recvfrom(fd, buf, sizeof(buf), 0, (struct sockaddr *)&youaddr, &len);
+	printf("recv is %s\n", buf);
+	printf("ip %s, port %d\n", inet_ntoa(htonl(youaddr.sin_addr.s_addr)), htons(youaddr.sin_port));
+	sendto(fd, buf, strlen(buf) + 1, 0, (struct sockaddr *)&youaddr, sizeof(youaddr));
+}
+
+上午作业： 完成上面练习题
+
+
