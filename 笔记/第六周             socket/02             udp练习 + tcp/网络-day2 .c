@@ -406,7 +406,8 @@ int main()
 	}
 	listen(sockfd, 5);       // 3. 监听  
 
-	int connfd = accept(sockfd, (struct sockaddr *)&youaddr,&len);   // 4. 建立连接。 注意！！此处创建了新的描述符！！！连接描述符。 
+	int connfd = accept(sockfd, (struct sockaddr *)&youaddr,&len);  
+	// 4. 建立连接。 注意！！此处创建了新的描述符！！！连接描述符。 
 	if(connfd < 0)
 	{
 		perror("accept");

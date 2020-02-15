@@ -1,0 +1,383 @@
+第六天 (4学时)
+复习:
+udp 通信
+1) 发送端
+fd = socket(AF_INET, SOCK_DGRAM, 0);
+struct sockaddr_in youaddr;
+指定ip地址  和端口号
+inet_addr("127.0.0.1");
+htons(8888);
+
+sendto();	//发送数据
+
+close(fd);
+
+2) 接收端
+fd = socket(AF_INET, SOCK_DGRAM, 0);
+struct sockaddr_in myaddr;
+绑定自己的ip地址和端口号
+htonl(INADDR_ANY)	//INADDR_ANY 自动获得自己的ip地址
+
+bind(fd, (struct sockaddr *)&myaddr.....);
+
+一、udp聊天室作业讲解(60min)
+struct info		//公共结构体
+{
+	int type;   //1 上线   2 下线   3 消息
+	char buf[100];	//消息正文
+};
+
+1.1 login的实现原理
+客户端: 
+	启动就发送(type = 1)的消息给服务器
+服务器：不断接收
+	1 如果有结构体中type = 1的消息， 将客户端ip地址和端口号记录到数组中
+		理想情况(先检测数组中是否已经存在)
+	2 将登陆消息转发给其他客户端
+
+sprintf函数:  可以将数据以格式化方式输出到数组中(缓冲区中)
+sprintf(buf, "%d-%d-%d\n", year, month, day);
+
+printf 函数, 将数据以格式化方式输出到屏幕上
+printf("a is %d, b is %s\n", a, b);
+printf("%d-%d-%d\n", year, month, day);
+
+1.2 服务器如何记录每个客户端
+用的是一个数组(最多有100个元素)，同时用一个变量count 记录上线人数
+struct sockaddr_in client_addr[100] = { 0 };
+int count = 0;   //代表客户端上线人数
+
+login(count + 1 , 元素加入到数组中)
+
+logout(count - 1, 元素从数组中删除)
+
+1.3 服务器如何转发
+
+1.4 客户端如何logout
+	服务器:
+	1) 将此用户从数组中删除
+	2) 转发给其他客户端，有人下线
+	客户端:
+	输入"logout" , 同时给服务器发送
+	type = 1; 
+
+服务器端:  (可以接收 上线、下线、消息   同时会转发给其他登录的客户端)
+   每有一个客户端登录(记录此客户端的ip地址和端口号)
+  struct sockaddr_in client_addr[100] = { 0 };		//最多有100个客户端
+  int count = 0;   //代表客户端上线人数 
+
+客户端:    (发送: 启动时发送上线，退出时发送下线 .....)
+
+面试官： 1 QQ 聊天软件是用什么实现的 ?  (udp 还是 tcp)
+ 		多数功能是udp实现的:  (视频聊天、传输文件 上传文件....)
+                登录功能: tcp实现的
+         多人聊天: 都是通过服务器转发的(离线)
+	 继续问: udp 本身没有安全机制(QQ怎么实现数据安全传输) 
+		QQ内部自己实现的重传机制	
+         2 如果有很多消息过来，客户端如何处理?   使用消息队列(因为1 先进先出   2 消息队列可以区分哪个人)  
+		A 共享内存
+		B 消息队列
+		C 管道
+
+二、tcp服务器端的实现(60min)
+2.1 tcp和udp区别(5min)
+	tcp (可靠的数据传输方式)
+	1) 发送和接收方 先进行连接 (3次握手)， 目的: 确认对方是否在线
+	2) 发送方和接收方要有(重传机制)，如果发送方没收到对方的(ACK应答)，重传
+	udp (不可靠)
+	1) 不管对方是否在线，都传
+	2) 不会重传
+
+	tcp (适合安全性较高的场合)
+	udp (发送数据量大)
+
+	QQ 战胜其他对手主要原因
+	1) udp
+	2) 好友列表存在服务器上
+	3) 更新及时(不怕有些小bug ，也发布，一个星期之后，新版本)
+
+	微信(udp 和 tcp都有)
+
+2.2 tcp连接过程(先简单讲,讲解抓包后再详细讲)   (10min)
+	tcp 和 udp比(有连接)
+
+2.3 tcp服务器流程(10min)
+	参见ppt
+2.4 tcp服务器端函数(35min)
+1) 创建socket	
+	fd = socket(AF_INET, SOCK_STREAM, 0);
+2) 绑定ip地址和端口号
+	struct sockaddr_in myaddr;	
+	myaddr.sin_family = AF_INET;
+	myaddr.sin_addr.s_addr = htonl(INADDR_ANY); //ip地址	
+	myaddr.sin_port = htons(33333);//端口号
+	bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr));
+3) 监听
+	int listen(int sockfd, int backlog);
+	功能：设置允许同时连接的最大数
+	
+	listen(fd, 10);	//同时处理连接最多10个，不是只有10个客户端可以连接
+			//连接缓冲区最多10个
+4) 阻塞等待客户端连接
+	int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+	参数： sockfd  (socket返回值)
+	       addr (通常为NULL, 非NULL，保存客户端的ip地址和端口号)
+	       addrlen(通常为NUL, 非NULL，保存客户端的ip地址和端口号的长度)
+	注意:
+	返回值: newfd (服务器通过newfd和客户端通信)
+		每当有一个客户端连接，就返回一个新fd，可能有多个
+5) recv (接收数据, 阻塞接收)	
+	ssize_t recv(int sockfd, void *buf, size_t len, int flags);
+	参数：sockfd  accept 的返回值(newfd)
+	      buf     接收到的数据存放的位置
+              len     将要接收的数据的长度
+              flags   通常为0，  非0(后面详细讲  主要用在非阻塞)
+	返回值: > 0 表示收到的实际数据长度
+		<= 失败(对方断开连接， 内核)， 错误会反映到errno中
+		errno (根据errno分析出错的愿意)
+6) close(fd);
+
+验证tcp服务器(服务器端程序)
+server.c
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+int main()
+{
+	char buf[100] = { 0 };	// 清空buf  '\0' ---> 0, 将所有数据清成0
+	int fd = socket(AF_INET, SOCK_STREAM, 0);	//SOCK_STREAM 不要写成SOCK_DGRAM
+	struct sockaddr_in myaddr;
+	myaddr.sin_family = AF_INET;
+	myaddr.sin_port = htons(55555);
+	myaddr.sin_addr.s_addr = htonl(INADDR_ANY); 	//192.168.30.252
+	bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr));
+	listen(fd, 5);		//设置同时连接最大值5个
+	int newfd = accept(fd, NULL, NULL);		//阻塞等待客户端连接
+				//NULL 不需要知道对方ip地址，newfd 可以标识哪个客户端
+	printf("fd %d connect newfd %d\n", fd, newfd);
+	recv(newfd, buf, sizeof(buf), 0);  //阻塞等待客户端发送数据，必须newfd
+	printf("recv %s\n", buf);
+	close(fd);
+	close(newfd);
+}
+gcc server.c -o server
+./server               (启动服务器)
+nc 127.0.0.1 55555     (模拟客户端)
+
+问题:
+	recv(newfd, buf, sizeof(buf), 0);  //sizeof改成strlen 可以不? 不可以 
+	sizeof(buf)  ---> 100, 数组占用内存空间大小
+        strlen(buf)  ---> 0    字符串长度
+					
+三、tcp客户端的实现
+3.1客户端流程
+	参见PPT
+3.2 客户端主要函数讲解
+1) 创建socket	
+	fd = socket(AF_INET, SOCK_STREAM, 0);
+2) 指定好连接哪个服务器
+	struct sockaddr_in youaddr;
+	youaddr.sin_family = AF_INET;
+	youaddr.sin_port = htons(55555);
+	youaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 	//192.168.30.252	
+3) connect 连接服务器
+	int connect(int sockfd, const struct sockaddr *addr,socklen_t addrlen);
+	参数：
+	sockfd  socket 返回值
+	addr    服务器的ip地址和端口号
+	addrlen 结构体大小
+	connect(fd, (struct sockaddr *)&youaddr, sizeof(youaddr))
+4) send  发送数据
+	ssize_t send(int sockfd, const void *buf, size_t len, int flags);
+	sockfd  socket 返回值
+	send(fd, buf, sizeof(buf), 0);
+	返回值：实际发送的数据大小， 因为有可能缓冲区满
+5) recv 接收数据
+
+3.3 客户端实例演示
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+int main()
+{
+	char buf[100] = { 0 }; 
+	int fd = socket(AF_INET, SOCK_STREAM, 0);
+	struct sockaddr_in youaddr;
+	youaddr.sin_family = AF_INET;
+	youaddr.sin_port = htons(55555);
+	youaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 	//192.168.30.252
+
+	connect(fd, (struct sockaddr *)&youaddr, sizeof(youaddr));
+	scanf("%s", buf);
+	send(fd, buf, sizeof(buf), 0);
+	close(fd);
+}
+
+nc -l 127.0.0.1 55555
+./client
+
+int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+int connect(int sockfd, const struct sockaddr *addr,socklen_t addrlen);
+找不同:     (1) const      (2)  *
+为什么?  accept 函数 addr[出参]   客户端的ip地址和端口号           (输出值)
+         connect函数 addr[入参]   连接  的 服务器端的ip地址和端口号(输入值)  
+         const加上的目的: 让connect 函数没法改变*addr
+出参  执行时，会改变参数的值(函数会改变addr的值)
+入参
+先   ./server     再 ./client
+
+//练习///实现服务器端循环收客户端数据打印，同时收到的数据回传给对方(send)
+客户端从参数中提取ip地址和端口号,可以循环从键盘输入数据，发数据， 收
+./server
+./client 127.0.0.1 55555
+客户端-----> 输入hello----> 发送--------> 接收(hello)
+服务器-----> 打印hello----> 回传给客户端
+注意: 如果服务器端异常结束，端口号会被占用一小段时间(1分钟左右)，
+	也就是说要等1分钟后再开服务器
+server.c
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+int main()
+{
+	char buf[100] = { 0 };	// 清空buf  '\0' ---> 0, 将所有数据清成0
+	int fd = socket(AF_INET, SOCK_STREAM, 0);	//SOCK_STREAM 不要写成SOCK_DGRAM
+	struct sockaddr_in myaddr;
+	myaddr.sin_family = AF_INET;
+	myaddr.sin_port = htons(55555);
+	myaddr.sin_addr.s_addr = htonl(INADDR_ANY); 	//192.168.30.252
+	bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr));
+	listen(fd, 5);		//设置同时连接最大值5个
+	int newfd = accept(fd, NULL, NULL);		//阻塞等待客户端连接
+				//NULL 不需要知道对方ip地址，newfd 可以标识哪个客户端
+	printf("fd %d connect newfd %d\n", fd, newfd);
+	while(1)
+	{
+		recv(newfd, buf, sizeof(buf), 0);  //阻塞等待客户端发送数据，必须newfd
+		printf("recv %s\n", buf);
+		send(newfd, buf, sizeof(buf), 0);	//strlen(buf) + 1
+	}
+	close(fd);
+	close(newfd);
+}
+/////client.c   ./client 127.0.0.1 55555
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <string.h>
+int main(int argc, char *argv[])
+{
+	char buf[100] = { 0 }; 
+	int fd = socket(AF_INET, SOCK_STREAM, 0);
+	struct sockaddr_in youaddr;
+	youaddr.sin_family = AF_INET;
+	youaddr.sin_port = htons(atoi(argv[2]));
+	youaddr.sin_addr.s_addr = inet_addr(argv[1]); 	//192.168.30.252
+
+	connect(fd, (struct sockaddr *)&youaddr, sizeof(youaddr));
+	while(1)
+	{
+		scanf("%s", buf);
+		send(fd, buf, sizeof(buf), 0);
+		memset(buf, 0, sizeof(buf));
+		recv(newfd, buf, sizeof(buf), 0); 
+		printf("recv is %s\n", buf);
+	}
+	close(fd);
+}
+
+服务器连接多客户端
+需要(1 循环accpet    2 循环recv)
+
+四、tcp循环服务器原理 (5min)
+循环服务器: 一个while循环
+	    {	
+		accept     (阻塞)  当正在accept (有客户端发数据，收不到(不及时)  )
+		recv       (阻塞)  当正在recv   (有客户端请求连接，同样(不及时))
+	    }
+缺点(问题):  数据丢失或者    接收不及时
+
+五、tcp并发服务器 (45min)
+5.1  tcp并发服务器原理 (5min)
+	以多线程方式
+	主线程 不断accept (等连接)
+	每当有一个客户端连接，创建一个子线程，此线程单独和客户端 通信
+                   recv
+
+会有多个线程同时运行(阻塞就没有问题了)
+
+5.2 多线程实现并发服务器 (40min)
+void *recv_fun()
+{
+	while(1)
+	{
+		recv();
+	}
+}
+main()
+{
+	socket();
+	bind();
+	listen();
+	while(1)
+	{
+		accept();
+		pthread_create(recv_fun);	//创建新线程
+	}
+}
+
+
+5.3 并发服务器实例
+/////////////serv.c
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+void *recv_fun(void *p)		//recv_fun 可能会执行多个
+{
+	int fd; 	//用它来保存原来的newfd，否则newfd变了，就只给最后一个客户端发送数据
+	int *q = p;
+	fd  = *q;		//fd = *((int *)p);
+	char buf[100] = { 0 };
+	while(1){
+		if(recv(fd, buf, sizeof(buf), 0) <= 0)
+			return 0;
+		printf("recv is %s\n", buf);
+		send(fd, buf, sizeof(buf), 0);	//send只有在缓冲区满时会阻塞
+	}
+}
+int main(int argc, char *argv[])
+{	
+	pthread_t id;
+	char buf[100] = { 0 };
+	int fd = socket(AF_INET, SOCK_STREAM, 0);
+	struct sockaddr_in myaddr;
+	myaddr.sin_family = AF_INET;
+	myaddr.sin_port = htons(55555);   //不要超过65535
+	myaddr.sin_addr.s_addr = htonl(INADDR_ANY);  //inet_addr("127.0.0.1");
+	bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr));
+	listen(fd, 5);
+	while(1){
+		int newfd =  accept(fd, NULL, NULL);  //newfd 
+		pthread_create(&id, NULL, recv_fun, &newfd);
+	}
+}
+
+练习及作业：
+作业(ftp 文件上传下载)  
+tcp 协议实现
+服务器:   设置一个目录，此目录专门存放可下载文件
+
+客户端list,  服务器读出所有文件(opendir readir)，发给客户端
+
+客户端get hello.c,   服务器读取hello.c内容，发给客户端(服务器  fread    客户端用fwrite)
+
+客户端put hello.c    客户端读取hello.c内容，发给服务器(服务器  fwrite   客户端 fread)
+
+struct info_t
+{
+	int type;	//发送数据的类型(1 list    2 get   3  put)
+	char buf1[100];	//get 和 put的文件名(get a.c  buf1中存a.c)
+	char buf2[500];	//文件内容 或者 list的文件列表
+	int len;	//发送的数据的长度，实际发送的buf2数据的长度
+};
+

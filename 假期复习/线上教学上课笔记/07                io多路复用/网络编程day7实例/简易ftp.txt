@@ -1,0 +1,201 @@
+/////////server.c//////////////////////////////
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <string.h>
+struct data_info
+{
+	int type;	//1 list  2 get   3 put  4 quit
+	char buf1[50];	//保存文件名
+	char buf2[500];	//保存文件内容
+	int len;
+};
+void send_list(int fd, struct data_info *p)
+{
+	DIR *dp;  //定义一个结构体变量
+	dp = opendir("aaaa");
+
+	struct dirent *ep;   //用来保存一个文件
+	ep = readdir(dp);    //readdir,从目录中读出一个文件
+
+	while( ep != NULL)
+	{
+		if(ep->d_name[0] != '.')	//以.开头是隐藏文件，不显示
+		{
+			strcpy(p->buf1, ep->d_name);
+			send(fd, p, sizeof(struct data_info), 0);
+		}
+		ep = readdir(dp);
+	}
+}
+
+void send_file(int fd, struct data_info *p)
+{
+	char name[100] = { 0 };
+	sprintf(name, "%s/%s", "aaaa", p->buf1);
+	FILE *fp = fopen(name, "r");	
+	printf("file name is %s\n", p->buf1);
+	if(fp != NULL)
+	{
+		int len;
+		while((len = fread(p->buf2, 1, 500, fp)) > 0)	//
+		{
+			p->len = len;
+			send(fd, p, sizeof(struct data_info), 0);
+		}
+		fclose(fp);
+	}
+}
+
+void save_file(int fd, struct data_info *p)
+{
+	char name[100] = { 0 };
+	sprintf(name, "%s/%s", "aaaa", p->buf1);
+	FILE *fp = fopen(name, "a+");			//有bug 追加方式写入，内容会不一致
+	printf("file name is %s\n", p->buf1);
+	if(fp != NULL)
+	{
+		fwrite(p->buf2,1,p->len,fp);	//
+		fclose(fp);
+	}
+	strcpy(p->buf1, "success");
+	send(fd, p, sizeof(struct data_info), 0);	
+}
+
+void *recv_fun(void *p)
+{
+	int fd; 
+	int *q = p;
+	fd  = *q;		//fd = *((int *)p);
+	struct data_info s;
+	char buf[100] = { 0 };
+	while(1)
+	{
+		if(recv(fd, &s, sizeof(s), 0) <= 0)
+			return 0;
+		printf("type is %d\n", s.type);
+		if(s.type == 1)	//list
+		{
+			send_list(fd, &s);
+		}
+		else if(s.type == 2)	//get
+		{
+			send_file(fd, &s);
+		}
+		else if(s.type == 3)	//put
+		{
+			save_file(fd, &s);
+		}
+	}
+}
+int main(int argc, char *argv[])
+{	
+	pthread_t id;
+	char buf[100] = { 0 };
+	int fd = socket(AF_INET, SOCK_STREAM, 0);
+	struct sockaddr_in myaddr;
+	myaddr.sin_family = AF_INET;
+	myaddr.sin_port = htons(55555);   //不要超过65535
+	myaddr.sin_addr.s_addr = htonl(INADDR_ANY);  //inet_addr("127.0.0.1");
+	bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr));
+	listen(fd, 5);
+	while(1)
+	{
+		int newfd =  accept(fd, NULL, NULL);		//阻塞等待客户端连接
+		printf("client connect\n");
+		pthread_create(&id, NULL, recv_fun, &newfd);	//一旦有客户端连接，就创建新线程
+	}
+}
+
+/////////client.c//////////////////////////////
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <string.h>
+#include <pthread.h>
+
+struct data_info
+{
+	int type;	//1 list  2 get   3 put  4 quit
+	char buf1[50];	//保存文件名
+	char buf2[500];	//保存文件内容
+	int len;
+};
+int fd;
+char buf[100] = { 0 };
+void *recv_fun(void *p)
+{
+	while(1)
+	{
+		struct data_info s;
+		int ret = recv(fd, &s, sizeof(s), 0);	//阻塞
+		if(ret > 0)
+		{
+			if(s.type == 1)			//list
+			{
+				printf("%s\n", s.buf1);
+			}
+			else if(s.type == 2)
+			{
+				FILE *fp = fopen(s.buf1, "a+");	//"r+"   "w+"    
+								//"a+"  以追加的方式打开文件并写入
+				if(fp != NULL)
+				{
+					fwrite(s.buf2,1,s.len,fp);	//
+					fclose(fp);
+				}	
+			}
+		}
+	}
+}
+
+void send_file(int fd, struct data_info *p)
+{
+	FILE *fp = fopen(p->buf1, "r");	
+	printf("file name is %s\n", p->buf1);
+	if(fp != NULL)
+	{
+		while((p->len = fread(p->buf2, 1, 500, fp)) > 0)	//
+		{
+			send(fd, p, sizeof(struct data_info), 0);
+		}
+		fclose(fp);
+	}
+}
+int main(int argc, char *argv[])
+{	
+	pthread_t id;
+	fd = socket(AF_INET, SOCK_STREAM, 0);
+	struct sockaddr_in youaddr;
+	youaddr.sin_family = AF_INET;
+	youaddr.sin_port = htons(atoi(argv[2]));   //不要超过65535
+	youaddr.sin_addr.s_addr = inet_addr(argv[1]);	//ip地址
+	connect(fd, (struct sockaddr *)&youaddr, sizeof(youaddr));
+	pthread_create(&id, NULL, recv_fun, NULL);
+	while(1)
+	{
+		struct data_info s;
+		gets(buf);					//阻塞
+		if(strcmp(buf, "list") == 0)	//strcmp 字符串比较
+		{
+			s.type = 1;
+			send(fd, &s, sizeof(s), 0);	
+		}
+		else if(strcmp(buf, "get") == 0)	//strcmp 字符串比较
+		{
+			s.type = 2;
+			gets(s.buf1);
+			FILE *fp = fopen(s.buf1, "w");
+			fclose(fp);
+			send(fd, &s, sizeof(s), 0);	
+		}
+		else if(strcmp(buf, "put") == 0)	//strcmp 字符串比较
+		{
+			s.type = 3;
+			gets(s.buf1);
+			send_file(fd, &s);	
+		}		
+	}
+}

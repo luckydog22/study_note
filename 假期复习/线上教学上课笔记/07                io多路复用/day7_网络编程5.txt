@@ -1,0 +1,718 @@
+复习:
+tcp 服务器端 和 客户端
+服务器:
+1) 创建socket
+2) bind 绑定本地ip地址和端口号
+3) listen(设置可以同时连接的最大个数)
+4) accept (阻塞的方式等待客户端连接)
+5) recv  / send
+6) close
+
+客户端
+1) 创建socket
+2) connect (连接服务器)
+3) recv  / send
+4) close
+要求: 所有函数都知道，流程能自己写出来
+
+并发服务器(多线程   多进程)
+每有一个客户端，就创建一个新线程，此线程单独和客户端通信
+
+一、ftp文件服务器作业讲解(60min)  取文件列表、下载文件、上传文件
+公共结构体讲解
+struct data_info
+{
+	int type;	//1 list  2 get   3 put  4 quit
+	char buf1[50];	//保存文件名
+	char buf2[500];	//保存文件内容
+	int len;
+};
+
+1.1 list的实现(15min)
+客户端:
+	type = 1;
+	send();
+	recv();---->收到就打印
+服务器端:
+	recv()
+	if(type == 1)
+	{
+		//读aaaa目录，取出文件名
+		1)  所有文件名全取出----> 发送 
+			文件列表可能太多，导致一包发送不下      
+                2)  取出一个发送一个          (选取这种方式)
+			每次发一个
+	}
+	
+1.2 send file的实现(15min)
+
+1.3 get file的实现(15min)
+客户端:
+	type = 2;
+	buf1----> 文件名
+	send();
+	fopen("w");    //第一次先清空文件
+	recv()
+	if(type == 2)
+	{
+		fopen("a");  "w"   "a"  写文件?   "a"
+		fwrite();
+	}
+服务器端
+	recv()
+	if(type == 2)
+	{
+		fopen 打开文件
+		len = fread(buf2, sizeof(char), 500, fp);	//将要读500，但可能不够500
+								//len, 记录实际读出的文件大小
+		send();
+	}	
+
+1.4 练习及答疑(15min)
+/////////server.c//////////////////////////////
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <string.h>
+struct data_info
+{
+	int type;	//1 list  2 get   3 put  4 quit
+	char buf1[50];	//保存文件名
+	char buf2[500];	//保存文件内容
+	int len;		//加一个变量 number--->1 新建
+};
+void send_list(int fd, struct data_info *p)
+{
+	DIR *dp = NULL;  //定义一个结构体变量
+	dp = opendir("aaaa");	//打开目录，fopen：打开文件，返回FILE *
+
+	struct dirent *ep;   //用来保存一个文件
+	ep = readdir(dp);    //readdir,执行一次从目录中读出一个文件
+			//当读出所有文件时，返回值是NULL
+	while( ep != NULL)
+	{
+		if(ep->d_name[0] != '.')	//以.开头是隐藏文件，不显示
+		{
+			strcpy(p->buf1, ep->d_name);
+			send(fd, p, sizeof(struct data_info), 0);
+		}
+		ep = readdir(dp);
+	}
+}
+
+void send_file(int fd, struct data_info *p)
+{
+	char name[100] = { 0 };
+	sprintf(name, "%s/%s", "aaaa", p->buf1);
+	FILE *fp = fopen(name, "r");	
+	printf("file name is %s\n", p->buf1);
+	if(fp != NULL)
+	{
+		int len;
+		while((len = fread(p->buf2, 1, 500, fp)) > 0)	//p->len = fread(p->buf2, 1, 500, fp)
+		{
+			p->len = len;
+			send(fd, p, sizeof(struct data_info), 0);
+		}
+		fclose(fp);
+	}
+}
+
+void save_file(int fd, struct data_info *p)
+{
+	char name[100] = { 0 };
+	sprintf(name, "%s/%s", "aaaa", p->buf1);
+	FILE *fp = fopen(name, "a+");		//有bug 追加方式写入，内容会不一致
+	printf("file name is %s\n", p->buf1);
+	if(fp != NULL)
+	{
+		fwrite(p->buf2,1,p->len,fp);	//
+		fclose(fp);
+	}
+	strcpy(p->buf1, "success");
+	send(fd, p, sizeof(struct data_info), 0);	
+}
+
+void *recv_fun(void *p)
+{
+	int fd; 
+	int *q = p;
+	fd  = *q;		//fd = *((int *)p);
+	struct data_info s;
+	char buf[100] = { 0 };
+	while(1)
+	{
+		if(recv(fd, &s, sizeof(s), 0) <= 0)
+			return 0;
+		printf("type is %d\n", s.type);
+		if(s.type == 1)	//list
+		{
+			send_list(fd, &s);
+		}
+		else if(s.type == 2)	//get
+		{
+			send_file(fd, &s);
+		}
+		else if(s.type == 3)	//put
+		{
+			save_file(fd, &s);
+		}
+	}
+}
+int main(int argc, char *argv[])
+{	
+	pthread_t id;
+	char buf[100] = { 0 };
+	int fd = socket(AF_INET, SOCK_STREAM, 0);
+	struct sockaddr_in myaddr;
+	myaddr.sin_family = AF_INET;
+	myaddr.sin_port = htons(55555);   //不要超过65535
+	myaddr.sin_addr.s_addr = htonl(INADDR_ANY);  //inet_addr("127.0.0.1");
+	bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr));
+	listen(fd, 5);
+	while(1)
+	{
+		int newfd =  accept(fd, NULL, NULL);		//阻塞等待客户端连接
+		printf("client connect\n");
+		pthread_create(&id, NULL, recv_fun, &newfd);	//一旦有客户端连接，就创建新线程
+	}
+}
+
+/////////client.c//////////////////////////////
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <string.h>
+#include <pthread.h>
+
+struct data_info
+{
+	int type;	//1 list  2 get   3 put  4 quit
+	char buf1[50];	//保存文件名
+	char buf2[500];	//保存文件内容
+	int len;
+};
+int fd;
+char buf[100] = { 0 };
+void *recv_fun(void *p)
+{
+	while(1)
+	{
+		struct data_info s;
+		int ret = recv(fd, &s, sizeof(s), 0);	//阻塞
+		if(ret > 0)
+		{
+			if(s.type == 1)			//list
+			{
+				printf("%s\n", s.buf1);	 //buf1 文件名
+			}
+			else if(s.type == 2)
+			{
+				FILE *fp = fopen(s.buf1, "a+");	//"r+"   "w+"    
+								//"a+"  以追加的方式打开文件并写入
+				if(fp != NULL)
+				{
+					fwrite(s.buf2,1,s.len,fp);	//
+					fclose(fp);
+				}	
+			}
+		}
+	}
+}
+
+void send_file(int fd, struct data_info *p)
+{
+	FILE *fp = fopen(p->buf1, "r");	
+	printf("file name is %s\n", p->buf1);
+	if(fp != NULL)
+	{
+		while((p->len = fread(p->buf2, 1, 500, fp)) > 0)	//
+		{
+			send(fd, p, sizeof(struct data_info), 0);
+		}
+		fclose(fp);
+	}
+}
+int main(int argc, char *argv[])
+{	
+	pthread_t id;
+	fd = socket(AF_INET, SOCK_STREAM, 0);
+	struct sockaddr_in youaddr;
+	youaddr.sin_family = AF_INET;
+	youaddr.sin_port = htons(atoi(argv[2]));   //不要超过65535
+	youaddr.sin_addr.s_addr = inet_addr(argv[1]);	//ip地址
+	connect(fd, (struct sockaddr *)&youaddr, sizeof(youaddr));
+	pthread_create(&id, NULL, recv_fun, NULL);
+	while(1)
+	{
+		struct data_info s;
+		gets(buf);					//阻塞
+		if(strcmp(buf, "list") == 0)	//strcmp 字符串比较
+		{
+			s.type = 1;
+			send(fd, &s, sizeof(s), 0);	
+		}
+		else if(strcmp(buf, "get") == 0)	//strcmp 字符串比较
+		{
+			s.type = 2;
+			gets(s.buf1);
+			FILE *fp = fopen(s.buf1, "w");
+			fclose(fp);
+			send(fd, &s, sizeof(s), 0);	
+		}
+		else if(strcmp(buf, "put") == 0)	//strcmp 字符串比较
+		{
+			s.type = 3;
+			gets(s.buf1);
+			send_file(fd, &s);	
+		}		
+	}
+}
+
+有同学采用的
+send--->recv--->send--->recv ......
+不能用这种方式: 因为一旦服务器某包数据没收到，客户端将阻塞
+我们用的是(多线程方式)
+	while(1)  send
+	while(1)  recv
+
+二、非阻塞方式连接及接收(30min)
+有些场合需要非阻塞
+非阻塞:  accept  recv  read ....
+         可以让这些函数不等
+有时候，一个线程一直阻塞，效率有点低，
+那么可以有两个解决办法
+1)  不阻塞
+2)  阻塞一小段时间(1秒)
+
+2.1 如何实现非阻塞方式接收(15min)
+文件I/O (不仅仅socket通信)
+
+在打开文件后设置 O_NONBLOCK (非阻塞方式)
+1) int flags = fcntl(fd, F_GETFD, 0);
+	fcntl(file ----> control), 文件控制
+    	F_GETFD----> 读出文件处理方式标志位 (O_RDWR | O_TRUBC | .....)
+   取出文件标志位
+2) fcntl(fd, F_SETFL, flags | O_NONBLOCK);	
+   给文件标志位增加  O_NONBLOCK( 非阻塞 )
+        F_SETFL ---> 设置文件处理方式标志位
+accept 函数变成非阻塞方式
+2.2 非阻塞方式练习(15min)
+参照上面两个函数，实现并验证accept 非阻塞模式
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+int main()
+{
+	char buf[100] = { 0 };	// 清空buf  '\0' ---> 0, 将所有数据清成0
+	int fd = socket(AF_INET, SOCK_STREAM, 0);	//SOCK_STREAM 不要写成SOCK_DGRAM
+	struct sockaddr_in myaddr;
+	int flags = fcntl(fd, F_GETFD, 0);	//(1) 取出标志位
+	fcntl(fd, F_SETFL, flags | O_NONBLOCK); // (2)重新设置标志位
+	myaddr.sin_family = AF_INET;
+	myaddr.sin_port = htons(33333);
+	myaddr.sin_addr.s_addr = htonl(INADDR_ANY); 	//192.168.30.252
+	bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr));
+	listen(fd, 5);		//设置同时连接最大值5个
+	int newfd = accept(fd, NULL, NULL);		//阻塞等待客户端连接
+	printf("11111111111111 %d\n", newfd);		//-1 (正常  4)， 因为没有客户端连接，所以-1
+}
+讲解：recv函数的第四个参数
+recv / send
+ssize_t recv(int sockfd, void *buf, size_t len, int flags);
+ssize_t send(int sockfd, const void *buf, size_t len, int flags);
+
+flags ---> 通常是0
+           如果以非阻塞方式接收数，flags  设置为 MSG_DONTWAIT
+recv(fd, buf, sizeof(buf), MSG_DONTWAIT);    //接收不阻塞	   
+
+三、循环服务器的实现(30min)
+练习：以非阻塞方式实现如下流程， 并写客户端验证
+循环(accept  recv), 要求: 不用多线程方式，并且不漏掉accept和recv数据
+while(1)
+{
+	accept
+	recv
+}
+/////////////////////////////////////////////////////////////////////////////
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <fcntl.h>
+int fd1;
+int main()
+{
+	int newfd, ret;
+	char buf[100] = { 0 }; 
+	int fd = socket(AF_INET, SOCK_STREAM, 0);
+	fcntl( fd, F_SETFL, fcntl( fd, F_GETFD, 0 )|O_NONBLOCK );
+	struct sockaddr_in myaddr;
+	myaddr.sin_family = AF_INET;
+	myaddr.sin_port = htons(55555);
+	myaddr.sin_addr.s_addr = htonl(INADDR_ANY); 	//192.168.30.252
+	bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr));
+	listen(fd, 5);
+	while(1)
+	{
+		newfd = accept(fd, NULL, NULL);		//阻塞等待客户端连接
+		if(newfd > 0)
+		{
+			printf("fd %d connect newfd %d\n", fd, newfd);
+			fd1 = newfd;
+		}
+		ret = recv(fd1, buf, sizeof(buf), MSG_DONTWAIT);//阻塞等待客户端发送数据
+		if(ret > 0)
+		{
+			printf("recv %s\n", buf);
+			send(newfd, buf, sizeof(buf), MSG_DONTWAIT);
+		}
+		usleep(100000);		//0.1 s (usleep 是以微秒为单位)
+	}
+	close(fd);
+	close(newfd);
+}
+
+四、I/O 多路复用 select/epoll (120min)   好处: 更节省资源的处理并发服务器
+4.1 多线程实现并发服务器的问题
+1) 资源的问题(内存资源)
+	创建一个线程会分配多少内存空间
+	不同的ubuntu系统会分配不同的空间(1M  2M  4M  8M(当前的ubuntu))
+	100个客户端需要100个线程(800M内存)
+	1000个客户端需要100个线程(8G内存)
+2) 调度的问题
+	多线程和多进程类似(cpu 会在多线程之间切换(调度))
+	多个线程，会占用更多的cpu资源
+
+所以： 用多线程如果处理多客户端会耗费较多的资源
+	
+4.2 select 原理
+	可以将多个阻塞 放在一个select中(把多个fd用一个阻塞来处理)，用一个阻塞
+
+4.3 select 的实现(30min)
+int select(int maxfd, fd_set *read_fds, fd_set *write_fds, fd_set *except_fds, struct timeval *timeout);
+功能：可以将多个阻塞 放在一个select中(把多个fd用一个阻塞来处理)，用一个阻塞
+	select 是阻塞的(总的阻塞)
+参数
+	maxfd:  可能引起阻塞的最大文件描述符 + 1
+	read_fds (可能引起阻塞的读文件描述符集 recv accept read ....  3, 4, 5, )
+	wrtie_fds(可能引起阻塞的写文件描述符集 send write ....)
+	except_fds (其他文件描述符集)
+        timeout(0  一直阻塞，非0, 阻塞的时间)
+返回值: 引起解除阻塞的文件描述符个数
+
+	read_fds (1 个数组，每个元素是一个文件描述符    2 是一个位集，每一位代表一个文件描述符)
+	位集(为什么不是数组，如果是数组，此数组要非常大)
+	long 类型数(long--->32位, 某位是1，表示包含此文件描述符)
+
+select执行前
+	1) 将fd_accept    放到read_fs中 
+	 如果还有其他(recv),将recv_fd 放到read_fs中
+
+select执行后
+	read_fs中保存(引起解除阻塞的那个fd)
+
+执行前后值不同
+
+如何设置read_fds, write_fds, except_fds
+fd_set rdfs;    
+
+FD_ZERO(&rdfs);  	// 将整个文件描述符集清0
+
+FD_SET(fd, &rdfs); 	//将fd 添加到rdfs中，将rdfs 的fd位置1
+FD_SET(fd1, &rdfs); 	//将fd1 添加到rdfs中，将rdfs 的fd1位置1
+
+FD_CLR(fd1, &rdfs);     //将fd1 从rdfs中清除
+
+FD_ISSET(fd1, &rdfs); 	//判断fd1 是否在rdfs中
+
+实现io多路复用伪代码
+	fd_listen = socket();
+	bind(fd_listen);
+	fd_listen----> 放入read_fs中
+	maxfd = fd_listen
+	while(1)
+	{
+		select(maxfd + 1, &read_fs, NULL, NULL, NULL);
+		//一旦解除阻塞
+		for(i = 0;  i < max_fd; i++)	//扫描是哪个fd引起的解除阻塞
+		{
+			if(解除阻塞fd == fd_listen)
+			{
+				fd_recv1 = accept(); 处理连接
+				fd_recv1------>放入read_fs中,
+				更新maxfd 
+			}		
+			else 不是listen fd
+			{
+				recv(); 接收数据
+			}
+		}
+	}
+ 
+select 实现练习(30min)
+/////////////////////////////////////////
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#define MAXLINE 50
+typedef struct sockaddr SA;
+int main(int argc, char **argv)
+{
+	int listenfd, connfd, maxfd, i, nbyte;
+	struct sockaddr_in myaddr;
+	char buf[MAXLINE];
+	fd_set global_rdfs, current_rdfs;
+	if ((listenfd = socket(PF_INET, SOCK_STREAM, 0)) < 0)
+	{
+		perror("fail to socket");
+		exit(-1);
+	}
+	bzero(&myaddr, sizeof(myaddr));
+	myaddr.sin_family = PF_INET;
+	myaddr.sin_addr.s_addr = htonl(INADDR_ANY);//inet_addr(“192.168.1.100”); //htonl(INADDR_ANY);
+	myaddr.sin_port = htons(8888); /* port number */
+	if (bind(listenfd, (SA *) &myaddr, sizeof(myaddr)) < 0)
+	{
+		perror("fail to bind");
+		exit(-1);
+	}
+	listen(listenfd, 5);
+	FD_ZERO(&global_rdfs);
+	FD_SET(listenfd, &global_rdfs);	//添加文件描述符listenfd---->global_rdfs
+	maxfd = listenfd;
+	while ( 1 )
+	{
+		current_rdfs = global_rdfs;	//因为current_rdfs会被select更改
+		if (select(maxfd+1, &current_rdfs, NULL, NULL, 0) < 0)
+		{
+			perror("fail to select");
+			exit(-1);
+		}
+		else
+		{
+			for (i=0; i<=maxfd; i++)
+			{
+				if(FD_ISSET(i, &current_rdfs)) // fd i is ready
+				{
+					if (i == listenfd) // new connection is coming
+					{
+						connfd = accept(listenfd, NULL, NULL);
+						FD_SET(connfd, &global_rdfs);	//添加conn_fd->rdfs
+						maxfd = maxfd > connfd ? maxfd : connfd;
+					}
+					else // client send message
+					{
+						if ((nbyte = recv(i, buf, sizeof(buf), 0)) <= 0)
+						{
+							close(i);
+							FD_CLR(i, &global_rdfs);
+						}
+						else
+						{
+							send(i, buf, sizeof(buf), 0);
+						}
+					}
+				}
+			} // end for
+		}
+	}
+	return 0;
+}
+//////////////////////////////////////////////
+
+select (posix 标准  独立于操作系统)
+4.4 select 的缺点
+1) 等待的文件描述符最多1024个(32位系统)
+2) 因为在内核中是扫描方式，所以随着文件描述符增多，系统开销会变大
+
+4.5 
+poll 原理及实现
+和select一样，但可以解决文件描述符1024限制
+
+poll 函数原型
+int poll(struct pollfd *fds, nfds_t nfds, int timeout);
+
+poll 实现流程
+#define OPEN_MAX 10000
+struct pollfd       client[OPEN_MAX];
+client[0].fd = listenfd;
+poll(client, maxi+1, -1);	 //和select 一样，总的阻塞, 等待client数组中所有的
+for(...)	//有可能有多个客户端发来数据，在for循环中处理
+{
+	if(client[0])
+	{
+		newfd = accept
+		client[i] = newfd
+	}
+	else 
+	{
+		recv
+	}	
+}
+client[i].fd = connfd; 
+
+五、epoll (解决select 描述符限制和效率低两个问题)
+5.1 epoll原理
+内部使用callback机制，进而处理速度快
+
+5.2 epoll的实现(30min)
+#define MAXEPOLL 10000
+1) 将socket设置成非阻塞模式
+	int flags = fcntl(fd, F_GETFD, 0);	//(1) 取出标志位
+	fcntl(fd, F_SETFL, flags | O_NONBLOCK); // (2)重新设置标志位
+2) epoll_create
+	epoll_fd = epoll_create(MAXEPOLL);    //!> create, 类似于动态内存分配(但是在共享内存中分配)
+				//为什么在共享内存中分配?  为了提高效率(省掉了 内核和应用之间copy数据)
+3) epoll_ctl
+	ev.events = EPOLLIN | EPOLLET;      //!> accept Read!
+			//EPOLLIN 表示如果有read操作会解除阻塞
+			//EPOLLOUT write
+			//解除阻塞 1) 有新数据来   2) 刚才的数据比较多，没处理过来的数据
+			//EPOLLET (两种情况都会引起解除阻塞)
+	ev.data.fd = listen_fd;                 //!> 将listen_fd 加入	
+	epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_fd, &ev);
+4) epoll_wait  (select 或者 poll  总的阻塞)
+
+5) 循环检索产生什么事件 
+      epoll 实现练习(30min)
+
+///////////////////////////////////////////////
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <sys/socket.h>
+#include <netinet/in.h>           /* socket类定义需要*/
+#include <sys/epoll.h>            /* epoll头文件 */
+#include <fcntl.h>                /* nonblocking需要 */
+#include <sys/resource.h>     /* 设置最大的连接数需要setrlimit */
+#define MAXEPOLL    10000   /* 对于服务器来说，这个值可以很大的！ */
+#define MAXLINE     1024
+#define     PORT            6000
+#define MAXBACK 1000  
+//!> 设置非阻塞
+//!>
+int setnonblocking(int fd)
+{
+	if( fcntl( fd, F_SETFL, fcntl( fd, F_GETFD, 0 )|O_NONBLOCK ) == -1 )
+	{
+		printf("Set blocking error : %d\n", errno);  
+		return -1;  
+	}
+	return 0;
+}
+
+int main( int argc, char ** argv )
+{
+	int         listen_fd;
+	int         conn_fd;
+	int         epoll_fd;
+	int         nread;
+	int         cur_fds;                //!> 当前已经存在的数量
+	int         wait_fds;               //!> epoll_wait 的返回值
+	int     i, len;
+	struct sockaddr_in servaddr;
+	struct sockaddr_in cliaddr;
+	struct  epoll_event ev;
+	struct  epoll_event evs[MAXEPOLL];
+	char    buf[MAXLINE];
+	//!> server 套接口
+	//!>
+	bzero( &servaddr, sizeof( servaddr ) );
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_addr.s_addr = htonl( INADDR_ANY );
+	servaddr.sin_port = htons( PORT );
+	//!> 建立套接字
+	if( ( listen_fd = socket( AF_INET, SOCK_STREAM, 0 ) ) == -1 )
+	{
+		printf("Socket Error...\n" , errno );
+		exit( EXIT_FAILURE );
+	}  
+	//!> 设置非阻塞模式
+	if( setnonblocking( listen_fd ) == -1 )
+	{
+		printf("Setnonblocking Error : %d\n", errno);
+		exit( EXIT_FAILURE );
+	}  
+	//!> 绑定
+	if( bind( listen_fd, ( struct sockaddr *)&servaddr, sizeof( struct sockaddr ) ) == -1 )
+	{
+		printf("Bind Error : %d\n", errno);
+		exit( EXIT_FAILURE );
+	}  
+	//!> 监听
+	//!>
+	if( listen( listen_fd, MAXBACK ) == -1 )
+	{
+		printf("Listen Error : %d\n", errno);
+		exit( EXIT_FAILURE );
+	}
+	//!> 创建epoll
+	//!>
+	epoll_fd = epoll_create( MAXEPOLL );    //!> create
+	ev.events = EPOLLIN | EPOLLET;      //!> accept Read!
+	ev.data.fd = listen_fd;                 //!> 将listen_fd 加入
+	if( epoll_ctl( epoll_fd, EPOLL_CTL_ADD, listen_fd, &ev ) < 0 )
+	{
+		printf("Epoll Error : %d\n", errno);
+		exit( EXIT_FAILURE );
+	}
+	cur_fds = 1;
+	while( 1 )
+	{
+		if( ( wait_fds = epoll_wait( epoll_fd, evs, cur_fds, -1 ) ) == -1 )
+		{
+			printf( "Epoll Wait Error : %d\n", errno );
+			exit( EXIT_FAILURE );
+		}
+
+		for( i = 0; i < wait_fds; i++ )
+		{
+			if( evs[i].data.fd == listen_fd && cur_fds < MAXEPOLL )//!> if是监听端口有事
+			{
+				if( ( conn_fd = accept( listen_fd, (struct sockaddr *)&cliaddr, &len ) ) == -1 )
+				{
+					printf("Accept Error : %d\n", errno);
+					exit( EXIT_FAILURE );
+				}
+				printf( "Server get from client !\n"/*,  inet_ntoa(cliaddr.sin_addr), cliaddr.sin_port */);
+				ev.events = EPOLLIN | EPOLLET;      //!> accept Read!
+				ev.data.fd = conn_fd;                   //!> 将conn_fd 加入
+				if( epoll_ctl( epoll_fd, EPOLL_CTL_ADD, conn_fd, &ev ) < 0 )
+				{
+					printf("Epoll Error : %d\n", errno);
+					exit( EXIT_FAILURE );
+				}
+				++cur_fds;
+				continue;
+			}  
+			//!> 下面处理数据
+			//!>
+			nread = read( evs[i].data.fd, buf, sizeof( buf ) );
+			if( nread <= 0 )                     //!> 结束后者出错
+			{
+				close( evs[i].data.fd );
+				epoll_ctl( epoll_fd, EPOLL_CTL_DEL, evs[i].data.fd, &ev );  //!> 删除计入的fd
+				--cur_fds;                  //!> 减少一个呗
+				continue;
+			}
+			write( evs[i].data.fd, buf, nread );            //!> 回写
+		}
+	}
+	close( listen_fd );
+	return 0;
+}
+////////////////////////////////////////////////
+作业: 用select 实现ftp文件服务器
