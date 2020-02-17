@@ -1,0 +1,458 @@
+复习:
+1) tcp 状态图(tcp 3次握手  4次挥手)
+2) sqlite3
+	(1) 安装, 需要3个安装包
+	(2) sqlite3 my.db   (如果数据库存在，就打开，不存在就创建)
+	(3) create table    (创建表)
+	(4) insert into     (插入记录)
+	(5) select          (查询记录)
+		select * from stu_info;
+		select * from stu_info where name = 'xiaoli';
+		select * from stu_info where age > 25;
+		select name, number from stu_info where age > 25;
+		select * from stu_info where name like '%li%';		//模糊查询
+		select count(*) from stu_info;
+		select sum(age) from stu_info;
+		select avg(age) from stu_info;
+		select * from stu_info where name like '%li%' and age > 25;
+		
+一 sql 语句2
+删除记录
+delete from stu_info where name = 'lisi';
+delete from stu_info;   //删除所有记录
+
+
+修改记录
+zhangsan   ,  年龄改成30
+
+update stu_info set age = 30 where name = 'zhangsan';
+update stu_info set age = 30, sex = 'nv' where name = 'wangwu'; 
+
+练习：
+修改年龄 > 25 的学生，性别为女
+update stu_info set sex = 'nv' where age > 25;
+
+二、通过脚本执行sql语句
+将所有的sql语句，写到一个文件中，然后执行这个文件，就把所有语句都执行了
+写一个文件 create_score_info.sql
+
+drop table if exists score_info;
+create table score_info (number varchar(20), math integer, ch integer, en integer);
+insert into score_info  values ('1001', 100, 90, 80);
+insert into score_info  values ('1002', 90, 80, 80);
+insert into score_info  values ('1003', 95, 90, 85);
+
+执行文件
+sqlite3 my.db < create_score_info.sql;		//  <  (输入重定向)
+
+三 多表联合(查询数学成绩 > 90的所有学生的基本信息和成绩)
+学生基本信息表
+number name age sex
+
+学生成绩表  (两个表都有编号)  实现列出  数学成绩 > 95 学生的基本信息
+nubmer math ch en  
+
+select stu_info.*, score_info.math from stu_info, score_info where score_info.math > 90 
+		and stu_info.number = score_info.number;
+
+练习：
+图书管理系统
+1 创建图书基本信息数据表        图书编号 图书名称  出版社  作者   出版日期
+2 创建办理借阅卡的学生基础表    学生编号 学生姓名  所在系  所在班
+3 创建学生借阅表                学生编号 图书编号  借阅日期 借阅天数 是否归还
+
+4 添加记录并查询                
+查询指定出版社的图书信息
+查询指定作者的图书信息
+
+查询某个编号的学生基本信息
+查询已借出图书的图书名称
+
+修改某个编号的图书的基本信息
+
+删除借阅天数大于2天的借阅信息
+drop table if exists book_info;
+create table book_info (number varchar(20), name varchar(50), pub varchar(50), writer varchar(20), pub_date varchar(50));
+insert into book_info values ('B1001', 'c language', 'people', 'zhangsan', '2018-11');
+
+/////////////////////////////
+
+四、用c语言操作数据库(打开数据库，执行sql语句)
+1) 打开数据库(不存在就创建)
+2) 创建表
+3) 增删改查
+
+当安装数据库之后(安装c语言 支持包  一些库文件  同时sqlite3.h)
+
+4.1 打开数据库
+sqlite3_open(char *path, sqlite3 **db);		//FILE *fp = fopen("hello.c", "r");
+功能：打开数据库(如果不存在就创建)
+参数：path[入参]   被打开的数据库
+      db  [出参]，传出的是一个指向数据库的指针
+返回值：
+	SQLITE_OK  打开成功
+
+sqlite3 *p = NULL;
+int ret = sqlite3_open("my.db", &p);	//&p 函数就可以改变p的值
+if(ret == SQLITE_OK)
+{
+	printf("open sucess\n");
+}
+
+#include <stdio.h>
+#include <sqlite3.h>
+int main()
+{
+	sqlite3 *p;
+	if(sqlite3_open("my.db", &p) == 0)  //如果数据库不存在，就创建
+	{
+		printf("database open success\n");
+	}
+}
+
+编译-lsqlite3
+
+gcc -o test test.c -lsqlite3
+
+4.2 执行数据库操作的sql语句
+int   sqlite3_exec(sqlite3 *db, const  char  *sql,  sqlite3_callback callback, void *,  char **errmsg);
+参数　db ， open的第二个参数，db指向打开的数据库
+      sql， 操作数据库的语句  "delete from stu_info"
+      callback 如果sql是一个查询语句, 如果查询成功会自动调用callback函数
+		其他语句   NULL
+      void *  传递给callback 的指针
+      char **errmsg 	(通常传递一个一级指针地址), 是指向 数据库执行结果字符串 
+		NULL
+char *msg;		
+sqlite3_exec(p, "delete from stu_info", NULL, NULL, &msg);
+#include <stdio.h>
+#include <sqlite3.h>
+int main()
+{
+	sqlite3 *p;
+	if(sqlite3_open("my.db", &p) == 0)  //如果数据库不存在，就创建
+	{
+		sqlite3_exec(p, "delete from stu_info where name = 'wangwu'", NULL, NULL,NULL);
+		printf("database open success\n");
+	}
+}
+#include <stdio.h>
+#include <sqlite3.h>
+int main()
+{
+	sqlite3 *p;
+	char *msg = NULL;
+	if(sqlite3_open("my.db", &p) == 0)  //如果数据库不存在，就创建
+	{
+		sqlite3_exec(p, "delet from stu_info where name = 'wangwu'", NULL, NULL, &msg);
+		if(msg != NULL)	
+			printf("%s\n", msg);	//
+	}
+}
+
+练习：
+1 从键盘输入编号，姓名，年龄，性别，插入到stu_info中
+提示: sprintf
+#include <stdio.h>
+#include <sqlite3.h>
+int main()
+{
+	sqlite3 *p;
+	char name[20] = { 0 };
+	char number[20] = { 0 };
+	int age;
+	char sex[20] = { 0 };
+	if(sqlite3_open("my.db", &p) == 0)  //如果数据库不存在，就创建
+	{
+		char sql[100] = { 0 };
+		scanf("%s%s%d%s", number, name, &age, sex);
+		sprintf(sql, "insert into stu_info values('%s', '%s', %d, '%s')", number, name, age, sex);
+		sqlite3_exec(p, sql, NULL, NULL, NULL);
+		printf("database open success\n");
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+查询语句
+方法1:  用sqlite3 的callback函数
+callback  函数(通常是由某个事件触发而执行的， 底层执行上层的函数)
+1) 信号
+	signal(SIGINT, fun);	//当产生SIGINT信号时，执行fun
+2) 线程
+	pthread_create(&id, NULL, fun, NULL);
+int   sqlite3_exec(sqlite3 *db, const  char  *sql,  sqlite3_callback callback, void *,  char **errmsg);
+callback----> 类型？  函数指针(传进来一个函数，当查询到数据时自动执行此函数)
+		当查询到数据时自动执行callback(每当查询到一条，就执行一次)
+sql -----> select 语句
+
+typedef  int (*sqlite3_callback)(void *para, int f_num, char **f_value, char **f_name);
+功能：每找到一条记录自动执行一次回调函数
+	para：传递给回调函数的参数
+	f_num：记录中包含的字段数目 (number name age sex)   f_num  4
+	f_value：包含每个字段值的指针数组 (字符指针数组，指向每条记录的4个字段   "1001", "xiaoli", "25", "nan")
+	f_name：包含每个字段名称的指针数组(字符指针数组，指向4个字段名           "number", "name","age", "sex")
+返回值：成功返回0，失败返回-1
+#include <stdio.h>
+#include <sqlite3.h>
+int callback(void *para, int f_num, char **f_val, char **f_name)
+{
+	int i;
+	printf("table name %s\n", (char *)para);
+	for (i = 0; i < f_num; i++)
+	{
+		printf("%s:%-8s\n", f_name[i],f_val[i]);
+	}
+	return 0;
+}
+int main()
+{
+	sqlite3 *p;
+	if(sqlite3_open("my.db", &p) == 0)  //如果数据库不存在，就创建
+	{
+		sqlite3_exec(p, "select * from stu_info", callback, "stu_info", NULL);
+		printf("database open success\n");
+	}
+}
+
+方法2:
+int   sqlite3_get_table(sqlite3 *db, const  char  *sql,  char ***resultp,  int*nrow,  int *ncolumn, char **errmsg);
+	 功能：执行SQL操作
+      db：数据库句柄,  open的第二个参数
+      sql：SQL语句， select
+      resultp：用来指向sql执行结果的指针
+      nrow：满足条件的记录的数目, 包括字段名，相当于行数
+      ncolumn：每条记录包含的字段数目，相当于列数
+      errmsg：错误信息指针的地址， 如果语句执行出错，那么errmsg中是错误信息
+    	返回值：成功返回0，失败返回错误码
+
+resultp(三级指针，是因为调用时要传进来一个二级指针的地址)
+char **p;---->  "number","name","age", "sex", "1001", "xiaoli", "25", "nan", "1002", "xiaowang", "30", "nv" ....
+char *q-----> "1001";
+int row, col;
+sqlite3_get_table(db, sql, &p, &row, &col, NULL);
+
+#include <stdio.h>
+#include <sqlite3.h>
+#include <stdlib.h>
+int main()
+{
+	sqlite3 *db;
+	char  *errmsg,**resultp;
+	int  nrow,  ncolumn, i, j, index;
+	if(sqlite3_open("my.db", &db) == 0)
+	{
+		if(sqlite3_get_table(db, "select  *  from stu_info",  &resultp,  &nrow, &ncolumn,  &errmsg) !=  0)
+		{
+			printf("error :  %s\n",  errmsg);
+			exit(-1);
+		}
+		else
+		{
+			index = ncolumn;    // 第一条记录的第一个字段的下标     // 4
+			for(i = 0;i  < ncolumn; i++)
+				printf("%10s",  resultp[i]);	//打印字段名(表头)
+			printf("\n");
+			for(i=0;  i<nrow;  i++)      //nrow 是行，  如果只有一条记录，那么值为 2
+			{
+				for  (j=0;  j<ncolumn;  j++)
+				{
+    					printf("%10s",  resultp[index++]); //resultp[i][j] 是一个字符   
+   				}
+				printf("\n");
+			}
+		}
+	}
+}
+练习：
+1 循环5次从键盘输入编号，姓名，年龄，性别，插入到stu_info中
+2 查询年龄 > 25 的打印出来
+
+#include <stdio.h>
+#include <sqlite3.h>
+#include <stdlib.h>
+int main()
+{
+	sqlite3 *db;
+	char  *errmsg,**resultp;
+	int  nrow,  ncolumn, i, j, index;
+	if(sqlite3_open("my.db", &db) == 0)  //如果数据库不存在，就创建
+	{
+		char sql[100] = { 0 };
+		char name[20];
+		char number[20];
+		int age;
+		char sex[10];
+		for(i = 0; i < 5; i++)
+		{
+			scanf("%s%s%d%s", name, number, &age, sex);
+			sprintf(sql, "insert into stu_info values('%s', '%s', %d, '%s')",  number, name, age, sex);
+			int ret = sqlite3_exec(db, sql, NULL, NULL,&errmsg);
+			if(ret != 0)
+			{
+				printf(" %d : %s\n", ret, errmsg);
+			}
+		}
+		printf("please input age:\n");
+		scanf("%d", &age);
+		sprintf(sql, "select  *  from stu_info where age > %d",  age);
+		if(sqlite3_get_table(db, sql,  &resultp,  &nrow, &ncolumn,  &errmsg) !=  0)
+		{
+			printf("error :  %s\n",  errmsg);
+			exit(-1);
+		}
+		else
+		{
+			index = ncolumn;    // 第一条记录的第一个字段的下标     // 4
+			for(i = 0;i  < ncolumn; i++)
+				printf("%-10s",  resultp[i]);
+			printf("\n");
+			for  (i=0;  i<nrow;  i++)      //nrow 是行，  如果只有一条记录，那么值为 2
+			{
+				for  (j=0;  j<ncolumn;  j++)
+				{
+    					printf("%-10s",  resultp[index++]);    
+   				}
+				printf("\n");
+			}
+		}
+	}
+}
+
+作业: I/O多路复用实现tfp服务器
+/////////server.c//////////////////////////////
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <string.h>
+#include <stdlib.h>
+struct data_info
+{
+	int type;	//1 list  2 get   3 put  4 quit
+	char buf1[50];	//保存文件名
+	char buf2[500];	//保存文件内容
+	int len;
+};
+void send_list(int fd, struct data_info *p)
+{
+	DIR *dp;  //定义一个结构体变量
+	dp = opendir("aaaa");
+
+	struct dirent *ep;   //用来保存一个文件
+	ep = readdir(dp);    //readdir,从目录中读出一个文件
+
+	while( ep != NULL)
+	{
+		if(ep->d_name[0] != '.')	//以.开头是隐藏文件，不显示
+		{
+			strcpy(p->buf1, ep->d_name);
+			send(fd, p, sizeof(struct data_info), 0);
+		}
+		ep = readdir(dp);
+	}
+}
+
+void send_file(int fd, struct data_info *p)
+{
+	char name[100] = { 0 };
+	sprintf(name, "%s/%s", "aaaa", p->buf1);
+	FILE *fp = fopen(name, "r");	
+	printf("file name is %s\n", p->buf1);
+	if(fp != NULL)
+	{
+		int len;
+		while((len = fread(p->buf2, 1, 500, fp)) > 0)	//
+		{
+			p->len = len;
+			send(fd, p, sizeof(struct data_info), 0);
+		}
+		fclose(fp);
+	}
+}
+
+void save_file(int fd, struct data_info *p)
+{
+	char name[100] = { 0 };
+	sprintf(name, "%s/%s", "aaaa", p->buf1);
+	FILE *fp = fopen(name, "a+");			//有bug 追加方式写入，内容会不一致
+	printf("file name is %s\n", p->buf1);
+	if(fp != NULL)
+	{
+		fwrite(p->buf2,1,p->len,fp);	//
+		fclose(fp);
+	}
+	strcpy(p->buf1, "success");
+	send(fd, p, sizeof(struct data_info), 0);	
+}
+
+int main(int argc, char *argv[])
+{	
+	pthread_t id;
+	int maxfd = 0, i;
+	char buf[100] = { 0 };
+	fd_set global_rdfs, current_rdfs;
+	int fd = socket(AF_INET, SOCK_STREAM, 0);
+	struct sockaddr_in myaddr;
+	myaddr.sin_family = AF_INET;
+	myaddr.sin_port = htons(55555);   //不要超过65535
+	myaddr.sin_addr.s_addr = htonl(INADDR_ANY);  //inet_addr("127.0.0.1");
+	bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr));
+	listen(fd, 5);
+	FD_ZERO(&global_rdfs);
+	FD_SET(fd, &global_rdfs);	//添加文件描述符listenfd---->global_rdfs
+	maxfd = fd;
+	while(1)
+	{
+		current_rdfs = global_rdfs;	//因为current_rdfs会被select更改
+		if (select(maxfd+1, &current_rdfs, NULL, NULL, 0) < 0)
+		{
+			perror("fail to select");
+			exit(-1);
+		}
+		else
+		{
+			for (i=0; i<=maxfd; i++)
+			{
+				if(FD_ISSET(i, &current_rdfs)) // fd i is ready
+				{
+					if (i == fd) // new connection is coming
+					{		
+						int newfd =  accept(fd, NULL, NULL);		//阻塞等待客户端连接
+						FD_SET(newfd, &global_rdfs);	//添加conn_fd->rdfs
+						maxfd = maxfd > newfd ? maxfd : newfd;
+					}
+					else
+					{
+						int nbyte;
+						struct data_info s;
+						if ((nbyte = recv(i, &s, sizeof(s), 0)) <= 0)
+						{
+							close(i);
+							FD_CLR(i, &global_rdfs);
+						}
+						else
+						{
+							printf("type is %d\n", s.type);
+							if(s.type == 1)	//list
+							{
+								send_list(i, &s);
+							}
+							else if(s.type == 2)	//get
+							{
+								send_file(i, &s);
+							}
+							else if(s.type == 3)	//put
+							{
+								save_file(i, &s);
+							}
+						}
+					}
+				}
+			}
+		}		
+	}
+}
+
+

@@ -1,0 +1,299 @@
+第五天 (2学时)
+1 复习
+2 共用体占用字节数问题
+struct A
+{
+	char c1;	//c1   1字节， 3个字节空单元(存不下a)
+	int a;		//a    4
+	float b;	//b    4
+	char c2;	//c2   1 计算机为了存取速度更快(加了3个字节空单元)
+};// sizeof(struct A) ?  16
+
+struct A
+{
+	char c1;
+	char c2;
+	int a;
+	float b;
+};//	sizeof(struct A) ? 12
+short  d; //放c2后面，没有空单元
+
+typedef union	//共用体是  多个变量共用一块空间
+{
+	short x;
+	char c[2];
+}test_t;	//占用的内存空间是  最大的那个变量占用的空间(没有对齐的问题)	
+
+3 重新讲解端口号作用及常见端口号
+端口号   (tcp/ip协议栈(操作系统)用来识别是哪个应用)
+1)  范围?   (1 - 65535)
+2)  通用的协议使用的端口号范围？  (1 - 1023)
+3)  http  ?   80
+4)  ftp   ?   21
+
+4 udp发送端的实现
+1) 创建socket
+	socket(AF_INET, SOCK_DGRAM, 0);
+2) 指定对方的ip地址和端口号(接收方)
+	struct sockaddr_in youaddr;
+	youaddr.sin_family = AF_INET;
+	youaddr.sin_port = htons(33333);
+	youaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+3)发送数据
+	ssize_t sendto(int sockfd, const void *buf, size_t len, int flags,
+                      const struct sockaddr *dest_addr, socklen_t addrlen);
+	sockfd : socket的返回值
+	buf    : 将要发送的数据存放的位置
+	len    : 将要发送的数据长度
+	flags  :  0        (非0:   非阻塞后面发送接收，后面讲)
+	dest_addr ： 对方的ip地址和端口号
+	addrlen[入参]   : sockaddr长度  
+例: sendto(fd, buf, sizeof(buf), 0, (struct sockaddr *)&youaddr, sizeof(youaddr))
+4)关闭socket
+	close(fd);
+///send.c
+#include <netinet/in.h>
+#include <stdio.h>
+#include <sys/socket.h>
+#include <string.h>
+int main()
+{
+	char buf[100] = "hello world";
+	struct sockaddr_in youaddr;
+	int len;
+	int fd = socket(AF_INET, SOCK_DGRAM, 0);
+	youaddr.sin_family = AF_INET;
+	youaddr.sin_port = htons(33333);
+	youaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 	//192.168.30.252	
+	sendto(fd, buf, strlen(buf) + 1, 0, (struct sockaddr *)&youaddr, sizeof(youaddr));
+}				//  + 1   加 '\0'   strlen("hello")--> 5  + '\0'  所以+1
+
+没bind (sendto用的哪个端口号?  linux系统自动为程序分配了一个端口号)
+测试: 方法1
+sudo nc -ul 127.0.0.1 33333    //接收端
+gcc send.c -o send            //发送端 ./send
+方法2:
+gcc recv.c -o recv            //用两个终端  ./recv      ./send
+
+5 练习： 接收端和发送端组合在一起
+写一个接收端程序(收到数据，就回发(谁发给我，我就发给谁) ,  recvfrom的第5个参数  )
+
+nc -u 127.0.0.1 33333 (发送)
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+int main()
+{
+	char buf[100] = { 0 };
+	struct sockaddr_in youaddr;
+	int len;
+	int fd = socket(AF_INET, SOCK_DGRAM, 0);
+	struct sockaddr_in myaddr;
+	myaddr.sin_family = AF_INET;
+	myaddr.sin_port = htons(33333);
+	myaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 	//192.168.30.252
+	bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr));	
+	recvfrom(fd, buf, sizeof(buf), 0, (struct sockaddr *)&youaddr, &len);
+	printf("recv is %s\n", buf);
+	printf("ip %s, port %d\n", inet_ntoa(htonl(youaddr.sin_addr.s_addr)), htons(youaddr.sin_port));
+	sendto(fd, buf, strlen(buf) + 1, 0, (struct sockaddr *)&youaddr, sizeof(youaddr));
+}
+
+上午作业： 完成上面练习题
+///send.c
+#include <netinet/in.h>
+#include <stdio.h>
+#include <sys/socket.h>
+#include <string.h>
+int main()
+{
+	char buf[100] = "hello world";
+	struct sockaddr_in youaddr;
+	int len;
+	int fd = socket(AF_INET, SOCK_DGRAM, 0);
+	youaddr.sin_family = AF_INET;
+	youaddr.sin_port = htons(33333);
+	youaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 	//192.168.30.252	
+	sendto(fd, buf, strlen(buf) + 1, 0, (struct sockaddr *)&youaddr, sizeof(youaddr));
+	memset(buf, 0, sizeof(buf));
+	recvfrom(fd, buf, sizeof(buf), 0, (struct sockaddr *)&youaddr, &len);
+	printf("recv is %s\n", buf);	
+}
+////recv.c
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+int main()
+{
+	char buf[100] = { 0 };
+	struct sockaddr_in youaddr;
+	int len;
+	int fd = socket(AF_INET, SOCK_DGRAM, 0);
+	struct sockaddr_in myaddr;
+	myaddr.sin_family = AF_INET;
+	myaddr.sin_port = htons(33333);
+	myaddr.sin_addr.s_addr = htonl(INADDR_ANY);//inet_addr("127.0.0.1"); 	//192.168.30.252
+	bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr));	
+	recvfrom(fd, buf, sizeof(buf), 0, (struct sockaddr *)&youaddr, &len);
+	printf("recv is %s\n", buf);
+	printf("ip %s, port %d\n", inet_ntoa(youaddr.sin_addr), htons(youaddr.sin_port));
+	sendto(fd, buf, strlen(buf) + 1, 0, (struct sockaddr *)&youaddr, sizeof(youaddr));
+}
+
+作业讲解:  用一个宏实现htonl
+#include <stdio.h>
+#define htonl(x) x = (x << 24) | (x >> 24) | (x << 8 & 0xff0000) | (x >> 8 & 0x00ff00) 
+
+int main()
+{
+	int x = 0x12345678;
+	htonl(x);
+	printf("%x\n", x);
+}
+
+方法2: 用函数来实现(用函数来实现更正规一些)
+int htonl(int x)
+{
+	int y = (x << 24) | (x >> 24) | (x << 8 & 0xff0000) | (x >> 8 & 0x00ff00);
+	return y;
+}
+
+day2作业答案
+1. 用共享内存和信号完成如下功能：一个进程在将数据写入共享内存后，用信号通知另一个进程，
+                              另一个进程捕获信号，将信息打印出来
+read.c
+#include <sys/shm.h>
+#include <sys/ipc.h>
+#include <stdio.h>
+#include <signal.h>
+char *p;
+void fun(int num)
+{
+	printf("%s\n", p);
+}
+int main()
+{
+	int i;
+	signal(SIGUSR1, fun);
+	int shmid = shmget(55555, 100 * sizeof(char), 0666 | IPC_CREAT);   ///IPC_CREAT  表示创建一块共享内存
+	p = shmat(shmid, NULL, 0);
+	printf("myid is %d\n", getpid());
+	while(1)
+	{
+		sleep(1);
+	}
+}
+
+write.c
+
+#include <sys/shm.h>
+#include <sys/ipc.h>
+#include <stdio.h>
+#include <signal.h>
+int main(int argc, char *argv[])
+{
+	int i;
+	int shmid;
+	if(argc < 2)
+	{
+		printf("param error! like this ./write 11111\n");
+	}
+	shmid = shmget(55555, 100 * sizeof(char), 0666 | IPC_CREAT); //创建共享内存
+	int pid = atoi(argv[1]);
+	char *p = shmat(shmid, NULL, 0);	//映射共享内存
+	while(1)
+	{
+		scanf("%s", p);
+		kill(pid, SIGUSR1);	//发信号，pid 进程号，SIGUSR1 自定义信号
+	}
+}
+
+6 
+练习：//////两个进程，每个都能接收，发送(双人upd聊天程序，循环收发)
+(注意：在一台电脑上，两个进程分别要用两个端口号， 1 发送端口号 对应 2 接收端口号)
+(因为scanf 和 recvfrom 都是阻塞的，所以需要用到多线程, 一个线程处理scanf，另一个线程处理recvfrom)
+33333     44444
+
+输入scanf      (阻塞)
+接收recvfrom   (阻塞)
+
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <pthread.h>
+#include <stdio.h>
+struct sockaddr_in my_addr;
+struct sockaddr_in to_addr;
+int fd;
+void *send_fun(void *p)
+{
+	char buf[100] = { 0 };
+	while(1)
+	{
+		gets(buf);
+		sendto(fd, buf, 100, 0, (struct sockaddr*)&to_addr, 16);
+	}
+}
+int main(int argc, char *argv[])
+{
+	pthread_t id;
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	my_addr.sin_family = AF_INET;
+
+	my_addr.sin_port = htons(atoi(argv[3]));	//argv[3] 自己的端口号  33333
+	my_addr.sin_addr.s_addr = htonl(INADDR_ANY);	//INADDR_ANY 能自动获取ip地址
+	bind(fd, (struct sockaddr *)&my_addr, sizeof(struct sockaddr));
+
+	to_addr.sin_family = AF_INET;
+	to_addr.sin_port = htons(atoi(argv[2]));	//argv[2]对方的端口号   44444
+	to_addr.sin_addr.s_addr = inet_addr(argv[1]);	//argv[1]对方的ip地址127.0.0.1
+
+	pthread_create(&id, NULL, send_fun,NULL); //创建线程时，系统会分配一个id, 放到变量id中
+	while(1)
+	{
+		char buf[100];
+		int len = 16;
+		recvfrom(fd, buf, 100, 0, (struct sockaddr *)&to_addr, &len);
+		printf("from %d:%s\n", ntohs(to_addr.sin_port), buf);
+	}	
+}
+
+进程结束，线程也跟着结束，为了让进程不先于线程结束，
+pthread_join(id);	//阻塞等待线程结束
+
+argv[1]    对方ip地址
+argv[2]   对方端口号
+argv[3]   自己端口号
+
+gcc hello.c -lpthread
+
+///A      ./a.out 127.0.0.1 33333 33334
+///B      ./a.out 127.0.0.1 33334 33333
+
+作业: UDP实现聊天室
+【实验目的】
+掌握网络编程中数据报套接字的使用方法
+【实验内容】
+用udp协议实现聊天室
+1.服务器端功能如下：
+广播通知客户端登录/退出；
+接收客户端发来的消息，广播给所有的客户端；
+广播系统消息
+2. 客户端功能如下：
+接收服务器端发来的消息并显示；
+发送消息给服务器端
+
+解析：
+用户端启动：给服务器发送上线消息
+用户端输入：logout  下线
+用户端输入其他，都是聊天内容
+
+服务器：捕捉用户上线("login"), 有用户上线，转发给其他人
+
+怎么标识上线、下线、消息
+
+用一个结构体 (服务器和客户端用struct info进行交互)
+struct info
+{
+	int type;   //1 上线   2 下线   3 消息
+	char buf[100];	//消息正文
+};

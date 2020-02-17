@@ -1,0 +1,282 @@
+复习
+select  / poll  / epoll
+select 最多有1024个文件描述符(除非重新编译内核)
+
+一、抓包及包解析(90min)   通过抓包软件，分析网络数据报(报文格式)
+1.1 wireshark 软件安装(20min)
+wireshark-win32-1.2.4  (用来分析网络数据报)
+
+1.2 wireshark软件使用讲解(10min)
+1) 监视数据报(发现病毒、电脑攻击)
+2) 开发软件时(分析协议)，保存报文
+3) filter(过滤某些报文)
+
+1.3 分析以太网包头(15min)
+6---> 6byte
+目的地址(对方的MAC地址，网卡地址)
+源地址(自己的网卡MAC地址)
+
+如何看arp
+ping 192.168.1.1  (先发arp)
+
+1.4 分析ip报文(15min)
+
+16位标识
+发送---->  (分包发送(10000)--->1,2,3,4,5,6,7)
+接收----> (用标志来区分这是1组数据)
+	将此数据 重新组合()
+
+13位偏移(在整包中的位置)
+
+通过13位偏移，可以重新组合数据
+
+1.5 分析udp tcp报文(20min)
+16位目的端口号:  通过端口号来调用上层的不同应用
+
+6个标志位，3个主要的
+SYN  (在connect(连接时会用到)), 1-----> 连接请求
+ACK  (应答标志 accept)          1-----> 应答
+FIN  (断开连接)                 1-----> 断开
+
+16位窗口大小(表示最多可以接收的数据大小，缓冲区中的数据大小)
+流量控制
+
+二、tcp 连接及断开过程(30min)
+客户端-----> connect
+服务器-----> accept
+
+2.1 3次握手(15min), 目的: 确认对方是否在线
+客户端(1)  SYN
+服务器(2)  SYN + ACK
+客户端(3)  ACK
+
+2.2 4次挥手(15min)
+发起方(1) FIN
+应答方(2) ACK
+应答方(3) FIN
+发起方(4) ACK
+
+四、网络超时检测(accept recv 一直阻塞      非阻塞)
+	阻塞一段时间(1 秒   2 秒)
+
+setsockopt  函数讲解
+设置(阻塞时间)
+int setsockopt(int sockfd, int level, int optname,const void *optval,socklen_t *optlen)
+功能：set设置  sock(socket)  opt(option), 设置socket的参数
+1) 阻塞时间
+2) 接收缓冲区大小
+3) 发送缓冲区大小
+4) 是否可以广播
+.....
+参数：
+level指定控制套接字的层次.可以取三种值:
+   1)SOL_SOCKET:通用套接字选项. 
+   2)IPPROTO_IP:IP选项. 
+   3)IPPROTO_TCP:TCP选项.　
+optname指定控制的方式(选项的名称), 相当于对level的补充
+	....
+optval获得或者是设置套接字选项.根据选项名称的数据类型进行转换(对optname的补充)
+
+optlen 是optname的长度
+
+1 设置是否允许广播       
+int on = 1;
+setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &on, sizeof(on));
+
+2 设置阻塞时间
+struct timeval
+{
+	__kernel_time_t 	tv_sec;		//秒
+	__kernel_suseconds_t	tv_usec;	//微秒
+};
+struct timeval tv;
+tv.tv_sec = 5;   //  设置5秒时间
+tv.tv_usec = 0;	//设置0微妙
+setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO,  &tv, sizeof(tv)); 
+
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+int main()
+{
+	char buf[100] = { 0 };
+	struct sockaddr_in youaddr;
+	struct timeval  tv;
+	int ret;
+	int len;
+	tv.tv_sec = 5;   //  设置5秒时间
+	tv.tv_usec = 0;	//设置0微妙
+	int fd = socket(AF_INET, SOCK_DGRAM, 0);
+	setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO,  &tv, sizeof(tv)); 
+	struct sockaddr_in myaddr;
+	myaddr.sin_family = AF_INET;
+	myaddr.sin_port = htons(33333);
+	myaddr.sin_addr.s_addr = htonl(INADDR_ANY);//inet_addr("127.0.0.1"); 	//192.168.30.252
+	bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr));	
+	ret = recvfrom(fd, buf, sizeof(buf), 0, (struct sockaddr *)&youaddr, &len);
+	if(ret > 0)
+		printf("recv is %s\n", buf);
+	else
+		printf("time out\n");
+}
+
+nc -u 127.0.0.1 33333
+hello
+
+五、udp广播(30min)及组播
+	
+5.1 单播 组播  广播 说明
+单播( 1<------>1 )
+组播( 可以将多个ip地址划分到一个组里  每个人发的消息其他人都能收到)
+	 极域(桌面共享教学软件)
+	 红蜘蛛
+广播(给本网络中所有人发数据)
+
+组播和广播(udp ? tcp ? udp and tcp ?)  只有udp 可以广播和组播(tcp 必须链接，所以不能广播和组播)
+
+广播地址？
+192.168.1.2(192.168.1.255     255 表示广播地址)
+            255.255.255.255   广播地址
+
+5.2 通过udp广播数据(只有udp可以广播，因为tcp需要连接)
+发送方：
+1) 创建socket(一定是UDP通信SOCK_DGRAM)
+int fd = socket(AF_INET, SOCK_DGRAM, 0);
+2) 指定目标ip地址和端口号(ip地址  192.168.30.255， 8888)
+struct sockaddr_in toaddr;
+toaddr.sin_family = AF_INET;
+toaddr.sin_port = htons(8888);
+toaddr.sin_addr.s_addr = inet_addr("192.168.0.255");	//255.255.255.255
+3) 默认情况，广播没有打开，(要设置socket允许广播)
+    int on = 1;   //1 表示允许广播， 0 不允许广播
+    setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &on, sizeof(on));
+4) 发送数据报
+sendto(fd, buf, sizeof(buf), 0, (struct sockaddr *)&toaddr, sizeof(to_addr));
+
+接收方
+1) 创建socket(一定是UDP通信SOCK_DGRAM)
+int fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+2) 绑定IP地址192.168.0.255
+  strcut sockaddr_in myaddr;
+  myaddr.sin_family = AF_INET:
+  myaddr.sin_port = htons(8888);
+  myaddr.sin_addr.s_addr = inet_addr("192.168.0.255");
+	bind();
+3) 接收数据
+   recvfrom(fd, buf, sizeof(buf), 0, &youaddr, &len);
+
+练习：实现udp广播发送端及接收端 (现在测试不出来多个人)
+
+///send.c
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+int main()
+{
+	char buf[100] = { 0 };
+	int fd = socket(AF_INET, SOCK_DGRAM, 0);
+	struct sockaddr_in toaddr;
+	toaddr.sin_family = AF_INET;
+	toaddr.sin_port = htons(8888);
+	toaddr.sin_addr.s_addr = inet_addr("192.168.0.255");
+	int on = 1;   //1 表示允许广播， 0 不允许广播
+	setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &on, sizeof(on));
+	scanf("%s", buf);
+	sendto(fd, buf, sizeof(buf), 0, (struct sockaddr *)&toaddr, sizeof(toaddr));
+}
+////recv.c
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+int main()
+{
+	char buf[100] = { 0 };
+	int len = sizeof(struct sockaddr);
+	struct sockaddr_in youaddr;
+	int fd = socket(AF_INET, SOCK_DGRAM, 0);
+	struct sockaddr_in myaddr;
+	myaddr.sin_family = AF_INET;
+	myaddr.sin_port = htons(8888);
+	myaddr.sin_addr.s_addr = inet_addr("192.168.0.255");
+	bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr));
+	while(1)
+	{
+		recvfrom(fd, buf, sizeof(buf), 0, (struct sockaddr *)&youaddr, &len);
+		printf("%s %s\n", inet_ntoa(youaddr.sin_addr),buf);
+	}
+}
+
+4.1 ip地址讲解(30min)
+ip地址的组成(ipv4  4字节 32位   192.168.1.111   60.50.12.150) 
+下列哪个ip地址是错的？   
+A 主机: 192.168.1.256     (错：每个值都小于256   8位(0-255) )
+B 主机: 192.168.1.255     (错：255是广播)
+C 主机: 192.168.1.0       (错: 0 代表网络地址，不可以设置)
+
+ip地址分为两部分(网络地址+主机地址)
+A 类地址 ()
+B 类地址
+C 类地址
+D 类地址
+
+这4组ip地址的用途
+下面这三个(代表的是局域网 哪个公司都可以用)
+A类 10.0.0.0 --10.255.255.255
+B类 172.16.0.0--172.31.255.255
+C类 192.168.0.0--192.168.255.255
+
+127开头的ip地址
+127.0.0.0到127.255.255.255是保留地址，用做循环测试用的。(自发自收    127.0.0.1)
+                                                                      127.0.0.2
+练习题
+下面属于A类IP地址的是(  A  )。
+ A  61.11.68.1
+ B  128.168.119.102
+ C  202.199.15.32
+ D  294.125.13.1
+
+IP网络地址中，一个C类IP地址由( 3 )字节的网络地址和(  1 )字节的主机地址组成。( D )
+ A  1,3
+ B  2,2
+ C  1,2
+ D  3,1
+
+子网掩码的作用
+定义: 用来指明一个IP地址的哪些位标识的是主机所在的网络地址与主机地址的位掩码
+作用：用来将一个大网络分成几个子网
+
+255.255.255.0----> 网络地址24位，主机地址8位
+255.255.255.128--->网络地址25位，主机地址7位
+
+当设置完子网掩码之后，如果是和我同一个局域网的主机，通信(不通过网关)
+否则(需要通过网关)
+
+举例：
+1)
+子网掩码 255.255.255.0, 那么192.168.1.1 和192.168.0.2 是否在同一局域网内
+	不在
+
+子网掩码 255.255.0.0, 那么192.168.1.1 和192.168.0.2   是否在同一局域网内
+	在
+2)
+子网掩码 255.255.255.0 那么此网络中最多有多少台主机?
+1-254  (0 代表本网络   255广播地址)， 去掉0 ，255，最多254
+
+子网掩码 255.255.255.128 那么此网络中最多有多少台主机?
+1-126  (0 代表本网络   127广播地址)   126
+
+255-----> 1111 1111
+128-----> 1000 0000  (bit7是网络地址部分，只剩bit6 - bit0)
+
+3)
+172.16.100.5/255.255.255.252 的网络地址   和 主机号是多少
+                   网络地址    172.16.100.4  主机地址  1
+
+255.255.255.252----> 11111111 11111111 11111111 11111100 (主机地址只占用2位)
+172.16.100.5(0000 0101)
+
+作业: 将3次握手，4次挥手，ip地址弄懂
+
+

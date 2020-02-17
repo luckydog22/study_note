@@ -389,10 +389,12 @@ I/O 模型： 4种：
 	  
 (4) 多路复用I/O       ----------  允许同时对多个I/O 进行控制  
 I/O多路复用。其基本思想是：
-先构造一张有关描述符的表，然后调用一个函数。当这些文件描述符中的一个或多个已准备好进行I/O时函数才返回。
+先构造一张有关描述符的表，然后调用一个函数。当这些文件描述符中的
+一个或多个已准备好进行I/O时函数才返回。
 函数返回时告诉进程那个描述符已就绪，可以进行I/O操作。
 
-*函数原型： int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
+*函数原型： int select
+(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
 参数：     参数1： 所有监控的描述符中最大的那个 +1 .
 		   参数2： 所有要读的文件描述符的集合。
 		   参数3：   ... 写   ...        

@@ -1,0 +1,319 @@
+复习:
+协议包解析(以太网头、ip头、udp、tcp)
+tcp 连接 (3次握手)
+tcp 断开 (4次挥手)
+
+超时检测(setsockopt)
+
+setsockopt
+1) 设置超时时间(阻塞等待事件)
+2) 设置允许广播
+
+广播地址(192.168.1.255)
+发送端: 
+	1)允许发送
+	2)往广播地址发送数据
+
+接收端: 1)绑定192.168.1.255
+
+ip地址分类
+A
+B
+C
+D
+
+三、tcp 有限状态机(30min)
+tcp 通信时，在不同阶段有不同状态
+
+nc -l 127.0.0.1 8888  (启动server)
+netstat -apn | grep 8888               //查看8888端口使用情况
+
+nc 127.0.0.1 8888  (启动客户端)
+netstat -apn | grep 8888               //查看8888端口使用情况
+
+客户端:
+
+CLOSE     (关闭)
+LISTEN    (服务器进入listen状态)
+ESTABLISHED  (服务器或者客户端 进入数据收发状态)
+
+笔试题
+TCP客户端在建立连接时，收到服务端返回的SYN/ACK报文并返回ACK后，处于以下何种状态
+正确答案:    ( C )
+A  LAST_ACK
+B  SYN_RECEIVED
+C  ESTABLISHED
+D  TIME_WAIT
+
+下列TCP连接建立过程描述正确的是：
+正确答案:     ( C )
+A  服务端收到客户端的SYN包后，就会进入SYN_SENT状态
+B  服务端收到客户端的ACK包后会进入SYN_RCVD状态
+C  当客户端处于ESTABLISHED状态时，服务端可能仍然处于SYN_RCVD状态
+D  服务端未收到客户端确认包后会直接关闭连接
+
+关于UDP协议，以下说法正确的有
+正确答案:     (A C D)
+A  UDP是传输层协议
+B  UDP提供了可靠的传输服务
+C  使用UDP可以监听8080端口
+D  DHCP使用了UDP协议
+
+tcp 中的listen (设置允许同时连接的最大个数)
+
+4.2 组播的实现(30min)
+组播ip地址  (224.0.0.1 - 239.255.255.254)
+可以让几个人是一个组(他们都关联 组播地址，有人向组播地址发送数据，任何人都可以收到)
+
+我们可以分很多组
+(
+1  224.0.0.1
+2  224.0.0.10
+3  225.10.10.10
+4  239.250.250.10
+5  226.1.1.1
+6  226.10.10.10
+)
+
+主要用于群聊(优点: 速度快    比遍历的方式速度快)
+struct ip_mreq
+{
+     struct  in_addr  imr_multiaddr;	//组播地址
+     struct  in_addr  imr_interface;	//本地地址
+};
+组播步骤
+发送端
+1 创建socket(UDP)
+int fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+2 指定目标IP地址和端口号(IP地址一定是一个组播地址)
+	struct sockaddr_in toaddr;
+	toaddr.sin_family = AF_INET;
+	toaddr.sin_port = htons(8888);
+	toaddr.sin_addr.s_addr = inet_addr("224.10.10.10");	//只要向组播地址发送就可以
+
+3 发送数据报(sendto)
+	sendto(fd, buf, sizeof(buf), 0, (struct sockaddr *)&toaddr, sizeof(toaddr));
+接收端
+1 创建socket(UDP)
+	int fd = socket(AF_INET, SOCK_DGRAM, 0);
+2 将自己的IP地址加入到组播地址中
+  定义结构体变量 
+  struct ip_mreq mreq;   //里面保存本地IP地址和组播地址，当设定完，本地IP地址就和组播地址关联到一起
+  mreq.imr_multiaddr.s_addr = inet_addr("224.10.10.10");  //设定组播地址
+  mreq.imr_interface.s_addr = htonl(INADDR_ANY);       //设定本地地址
+  setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));   
+3 绑定组播地址
+   224.10.10.10 (224.0.0.1- 239.255.255.254)
+   bind();
+4 接收数据(recvfrom)
+   recvfrom
+#include <sys/socket.h>
+#include <arpa/inet.h>
+
+
+///send.c
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+int main()
+{
+	char buf[100] = { 0 };
+	int fd = socket(AF_INET, SOCK_DGRAM, 0);
+	struct sockaddr_in toaddr;
+	toaddr.sin_family = AF_INET;
+	toaddr.sin_port = htons(8888);
+	toaddr.sin_addr.s_addr = inet_addr("224.10.10.10");
+	scanf("%s", buf);
+	sendto(fd, buf, sizeof(buf), 0, (struct sockaddr *)&toaddr, sizeof(toaddr));
+}
+
+////recv.c
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+int main()
+{
+	char buf[100] = { 0 };
+	int len = sizeof(struct sockaddr);
+	struct sockaddr_in youaddr;
+	int fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+	struct sockaddr_in myaddr,  peeraddr;   //peeraddr  组播地址
+	struct ip_mreq mreq;   //里面保存本地IP地址和组播地址，当设定完，本地IP地址就和组播地址关联到一起			
+	mreq.imr_multiaddr.s_addr = inet_addr("224.10.10.10");  //设定组播地址
+	mreq.imr_interface.s_addr = htonl(INADDR_ANY);       //设定本地地址
+	setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+
+	peeraddr.sin_family = AF_INET;
+	peeraddr.sin_port = htons(8888);
+	peeraddr.sin_addr.s_addr = inet_addr("224.10.10.10");
+	bind(fd, (struct sockaddr *)&peeraddr, sizeof(peeraddr));
+	while(1)
+	{
+		recvfrom(fd, buf, sizeof(buf), 0, (struct sockaddr *)&youaddr, &len);
+		printf("%s %s\n", inet_ntoa(youaddr.sin_addr),buf);
+	}
+}
+
+数据库(sqlite3)
+安装数据库
+1 用下载好的安装包安装
+libsqlite3-0_3.7.2-1ubuntu0.1_i386.deb (.deb的安装包可以用dpkg -i 来进行安装)
+
+sudo dpkg -i libsqlite3-0_3.7.2-1ubuntu0.1_i386_1.deb
+sudo dpkg -i libsqlite3-dev_3.7.2-1ubuntu0.1_i386_2.deb
+sudo dpkg -i sqlite3_3.7.2-1ubuntu0.1_i386_3.deb
+
+sqlite3 --version   (查看软件版本号)
+3.7.2
+
+.deb  (ubuntu专用的安装包格式)
+.rpm  (红帽Linux专用的安装包)
+.apk  (安卓)
+setup.exe
+
+/////////////////////////////////////////////////////////////////////////
+//数据存储三种方式
+1 直接地址存储(自己将flash 划分区域， 按照地址方式存取)
+	现在很少用(因为有了操作系统，操作系统帮我们管理磁盘)
+2 文件 (fat   ntfs   ext4 ....)， 数据量不大，没有规律
+	文件需要自己来管理
+	log (日志)
+	password(用户名和密码)
+问题:
+	插入、删除、修改  特别麻烦
+数据固定大小方式(修改)
+	fopen  fread  fgets  open read write
+	
+3 数据库(学生管理系统、库存系统)
+大型数据库(银行、电信、qq、百度、京东、阿里)
+	oracle(甲骨文)、sybase 
+	处理速度快、大数据能力强  	
+中型数据库
+	mysql(甲骨文)   sql server(微软   用户体验好)
+	mysql (开源)   腾讯   阿里   百度(修改  自定义)  
+	跨平台(支持linux 和 windows)	
+小型数据库
+	sqlite (小  )， 主要用在嵌入式设备中
+	1) 安装使用特别方便(安装完，只有几个lib文件)
+	2) 开源 (改)   13行  安装完10M
+
+sqlite(跨平台     ubuntu + windows)
+
+2 打开数据库
+sqlite3 my.db (打开数据库，如果不存在就创建)
+sqlite3 专用语句 (以.开头的是sqlite3的专用命令)
+	.help   (查看帮助)
+	.tables (查看有哪些表)
+	.quit  (.exit)
+
+数据库中有哪些概念
+数据库  (一些数据的集合)
+
+数据表  (保存同一类信息)
+
+例：图书管理系统
+  学生信息表
+  图书信息表
+  借阅表
+
+记录  (表中的一条信息)
+
+字段 (学生信息表) 
+	姓名  编号   性别  年龄  班级  (字段)
+        张三  1001   男    22    1901   (记录)
+        李四  1002   男    23    1901
+
+sql语句 (重要  是各个数据库的通用语言)
+1) 创建表 (用一条语句创建一个表)
+2) 插入记录
+3) 查询记录
+4) 删除记录
+5) 修改记录
+
+如何创建数据表 (学生信息表: 编号  姓名   年龄  性别)
+  create table stu_info (number varchar(20), name varchar(50), age integer, sex varchar(10));
+                 表名    字段
+  create table (创建表的关键字)
+  varchar      (可变字符)
+  integer      (整型)
+注意，上面命令可以在终端中执行，执行时 一定 不要加.    , 命令结束要加;   
+  .tables   (查看表)
+
+  删除表
+  drop table stu_info1;
+
+插入记录
+insert into stu_info  values ('1001', 'zhangsan', 25, 'nan');   //所有字段全都填入值
+
+//只给某些字段添加值
+insert into stu_info (number, age) values ('1002', 25);
+
+查询记录
+select * from stu_info;		//查询表中所有记录
+
+sqlite格式修改
+.header(s) ON|OFF      Turn display of headers on or off
+.mode column              列左对齐
+
+////////////windows 版本(带ui)
+怎么查询一条指定的记录
+
+查询名字是张三的记录
+select * from stu_info where name = 'zhangsan';
+* 表示所有字段
+stu_info 表名
+where 条件
+
+练习
+1  创建学生成绩表(字段如下)
+  学生编号  数学  语文  英语
+create table score_info (number varchar(20), math integer, ch integer, en integer);
+2 向学生成绩中添加三条记录
+   000001    100   90    80
+insert into score_info  values ('000001', 100, 90, 80);	
+   000002    80   90    80
+   000003    90   90    80
+3 查询出编号000003的记录
+select * from score_info where number = '000003';
+
+其他各种查询
+1 查询年龄是25的记录
+	select * from stu_info where age = 25;	
+2 查询年龄 > 25的记录
+	select * from stu_info where age > 25;
+3 查询记录 只想看编号、姓名字段
+	select number, name from stu_info where age > 25;
+
+4 如果想按顺序输出所有记录，按年龄排序
+	select * from stu_info order by age;    //升序
+	select * from stu_info order by age desc;    //降序
+
+5 模糊查询(假设有一个人名我记不住了，但能记住名字中的一个字， 就可以用模糊查询)
+查询名字当中带l字符的人
+	select * from stu_info where name like '%l%'; //特别有用
+	select * from stu_info where name like '%liu%'; //特别有用
+
+6 多条件查询
+想查询年龄大于 25， 编号 > 10001 的学生信息
+	select * from stu_info where age > 25 and number > '1001';
+	select * from stu_info where age > 25 and age < 27;	//and 可以有很多  
+	
+	select * from stu_info where age > 25 or number > '1001';
+
+7 统计记录条数
+	select count(*) from stu_info;
+	select count(*) from stu_info where age > 25;
+8 统计所有人的年龄总和
+	select sum(age) from stu_info;
+
+9 统计所有人的年龄平均值
+	select avg(age) from stu_info;
+
+	select avg(math, ch, en) from score_info where nae = '张三';
+
+delete from stu_info where number = '1002' and name != '张三';
+
+
+作业：整理tcp状态时序图，画出 时序图和 (3次握手  4次挥手) 的关系
