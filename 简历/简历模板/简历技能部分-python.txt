@@ -1,0 +1,10 @@
+python编程
+linux应用(操作及shell编程)
+python系统编程(文件I/O、多进程、多线程、网络编程)
+python数据结构
+数据库(MySQL、MongoDB、Redis)
+web前端(html、css、html5、javaScript、jquery)
+web全栈开发(Django框架)
+网络爬虫(scrapy框架、BeautifulSoup、phantomjs、Selenium)
+数据分析(Numpy、Panadas、Matplotlib)
+代码管理工具(git)
