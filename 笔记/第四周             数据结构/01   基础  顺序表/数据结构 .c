@@ -171,7 +171,7 @@ int InsertSqlist(seqlist_t *L,data_t x,int pos)
 	L->last++;           // 有效数据个数 +1.
 	return 0;
 }
-// 遍历链表。
+// 遍历顺序表
 void VisitSqlist(seqlist_t *L)
 {
 	int i;
