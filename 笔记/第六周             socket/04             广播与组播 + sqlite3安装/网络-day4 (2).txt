@@ -49,7 +49,8 @@ int main()
 		return -1;
 	}
 	int on = 1;
-	if(setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &on, sizeof(on)) < 0)    // 2. 设置允许发送广播。 
+	if(setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &on, sizeof(on)) < 0)    
+		// 2. 设置允许发送广播。 
 	{
 		perror("setsockopt");
 		return -1;

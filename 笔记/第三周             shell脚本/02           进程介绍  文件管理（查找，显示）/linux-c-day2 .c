@@ -97,7 +97,7 @@ lrwxrwxrwx 1 kayla kayla   3 Nov 25 23:02 x.lnk -> x.c
 
 
 4. 压缩文件   tar 
-命令 ： 压缩  ： tar cvfz Public.tar.gz Public/ 
+命令 ： 压缩  ： tar cvf z Public.tar.gz Public/ 
 		解压缩： tar xvfz Public.tar.gz 
 释义 ：
 tar    压缩命令   
