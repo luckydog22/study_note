@@ -238,6 +238,7 @@ int main()
 
 *4. 根据遍历顺序，画出二叉树  
 
+
 先序： A B C D E F G H K 
 中序： B A E D G F H K C  
 

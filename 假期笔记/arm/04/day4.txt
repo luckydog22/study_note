@@ -1,0 +1,199 @@
+前一天作业
+利用辗转相减法求两个数的最大公约数
+.text
+.globl _start
+_start:
+	mov r0,#9
+	mov r1,#15
+loop:
+	cmp r0,r1
+	beq stop
+	subgt r0,r0,r1
+	sublt r1,r1,r0
+	b loop
+stop:
+	b stop	
+.end
+
+猴子吃桃问题
+有一只猴子摘了一堆桃子,当即吃了一半,又再多吃了一个.
+以后每天都这样重复,到第10天发现只有1个桃子了
+问最开始摘了多少个桃子
+#include <stdio.h>
+
+int main()
+{
+    int x=1;
+    int day=10;
+    while(--day)
+    {
+        x=(x+1)*2;
+        printf("day=%d,x=%d\n",day,x);
+    }
+    return 0;
+}
+
+.text
+.globl _start
+_start:
+	mov r1,#9
+	mov r0,#1
+loop:
+	add r0,r0,#1
+	mov r0,r0,lsl #1
+	subs r1,r1,#1
+	bne loop
+	b .
+	 	
+.end
+
+指令集
+
+指令加上S后缀，其执行结果将会影响CPSR中的状态标志位N Z C V
+指令后加上条件执行后缀，将会根据状态标志位来决定是否执行相应指令
+如eq相等,ne不相等...
+
+b与bl
+b进行跳转
+bl先把下一条指令的地址，存放在r14(lr)中，然后再跳转
+函数调用要使用bl,参数如果少于4个用r0,r1,r2,r3来进行传递
+
+1.ARM数据处理指令
+
+算术指令：ADD ADC SUB SBC RSB RSC
+逻辑指令：AND ORR EOR BIC
+比较指令：CMP CMN TST TEQ
+数据搬移：MOV MVN
+上述指令只能对寄存器操作，不能针对存储器
+
+桶形移位器
+左移1种 lsl
+右移3种 lsr asr ror
+可以用来实现简单的常数乘除法
+
+立即数规则
+8位数循环右移偶数位能得到的数才是有效的立即数
+
+常数的装载
+mov r0,#5简单的数可以这样
+ldr r0,=0x11223344 这样可以装载任意的数
+
+测验
+1. 写一条 ARM 指令，分别完成下列操作：
+a) r0 = 16   mov r0,#16
+b) r0 = r1 / 16 (带符号的数字)  mov r0,r1,asr #4
+c) r1 = r2 * 3    add r1,r2,r2, lsl #1
+d) r0 = -r0      rsb r0,r0,#0
+2. 下面哪些立即数是数据处理指令中有效的数据?
+a) 0x00AB0000 b) 0x0000FFFF c) 0xF000000F
+d) 0x08000012 e) 0x00001f80 f) 0xFFFFFFFF
+3. BIC指令做什么用？
+位清零 bic r0,#0b1
+4. 为什么ARM 处理器增加了一条RSB 指令?
+简化立即数做为被减数的情况
+mov r1,#5
+sub r0,r1,r2
+
+rsb r0,r2,#5
+
+乘法指令
+mul r0,r1,r2
+乘法指令比较慢，所以程序中少用乘法
+没有除法指令
+
+
+作业
+要求大家完成64位的加减法
+ADC指令与ADD指令联用
+SBC指令与SUB指令联用
+
+实现简单的正整数除法
+.text
+.globl _start
+_start:
+	mov r0,#16
+	mov r1,#3
+	bl div
+	
+stop:
+	b stop
+div:
+	mov r2,#0
+loop:
+	cmp r0,r1
+	bcc xxx
+	subs r0,r0,r1
+	add r2,r2,#1
+	b loop
+xxx:
+	mov r1,r0
+	mov r0,r2
+	bx lr
+	 	
+.end
+
+计算一个数组里面数据的累加和
+.text
+.globl _start
+_start:
+	ldr r0,=myarray
+	mov r4,#0
+loop:
+	ldr r1,[r0],#4
+	add r4,r4,r1
+	cmp r1,#0
+	bne loop
+	
+	b .
+
+.data
+myarray:
+	.word 0x11
+	.word 0x22
+	.word 0
+		 	
+.end
+
+
+2.load/store指令
+RISC计算机通常不能对存储器中数据直接进行运算处理，只能直接处理寄存器中的数据
+要处理内存中的数据时，需要先把数据加载到寄存器中
+把内存中的数据加载到寄存器中称为load   ldr
+将寄存器中的数据存储到内存中称为store  str
+ldr str一次传输4个字节(一个字word)
+例如:
+mov r1,#0x40000000
+	ldr r0,[r1]
+	addr r0,r0,#1
+	str r0,[r1]
+	
+ldrb strb一次传输1个字节(byte)
+mov r1,#0x40000000
+	ldrb r0,[r1]
+	add r0,r0,#1
+	strb r0,[r1]
+	
+ldrh strh一次传输2个字节(半字halfword)
+mov r1,#0x40000000
+	ldrh r0,[r1]
+	add r0,r0,#1
+	strh r0,[r1]
+	
+带偏移量的load/store
+.text
+.globl _start
+_start:
+	mov r1,#0x40000000
+	@ldr r0,[r1,#8]
+	ldr r0,[r1,r2]
+	add r2,r2,#4
+	ldr r0,[r1,r2]
+	
+	b .
+.data
+.word 1,2,3,4,5,6,7,8,9,10
+	 	
+.end
+
+	
+	

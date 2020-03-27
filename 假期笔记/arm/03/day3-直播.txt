@@ -1,0 +1,93 @@
+计算1+2+3+...+100的汇编程序
+.text
+.globl _start
+_start:
+	mov r0,#100
+	mov r2,#0
+loop:
+	add r2,r2,r0
+	subs r0,r0,#1
+	bne loop
+	
+	b .
+.end
+
+指令加S后缀,那么它会根据执行结果改变状态标志位N Z C V
+CPSR current porgram status register当前程序状态寄存器
+N negative负数
+Z zero零
+C carry 发生进位或借位
+V overflow 结果发生溢出
+cmp指令不用加S也会改变状态标志
+
+指令的条件执行
+指令后面加上条件执行后缀，就可以根据状态标志来决定是否执行
+
+跳转指令与函数调用
+b foo跳转foo去执行
+b直接进行跳转
+bl会先将下一条指令的地址保存到r14(lr)里面，再跳转
+
+如何在汇编中实现函数调用
+bl func进行函数调用
+函数中如何返回
+1.bx lr返回
+2.mov pc,lr 另一种返回方法
+PC R15 里面存放将要执行的指令的地址
+LR R14 里面存放要返回到的指令的地址
+
+
+函数调用过程中如何传参
+参数依次用r0,r1,r2,r3来进行传递
+函数的返回值用r0来进行传递
+函数调用示例
+.text
+.globl _start
+_start:
+	mov r0,#3
+	mov r1,#5
+	bl foo
+	add r0,r1,r3
+	b .
+foo:
+	add r0,r0,r1
+	mov pc,lr @bx lr
+		
+.end
+
+
+mov r0,#立即数
+这样的指令对立即数有限制，不是任何一个数都可以的
+X循环右移2*Y
+
+如何装载立即数到寄存器
+ldr r0,=const可以装载任意的32位常数
+编译器遇到该行，发现如果mov可以的话，就改为使用mov指令来完成
+如果mov不行的话，可以使用ldr r0,=0x11223344
+实现原理
+用mov来实现，占用空间小，速度快,但是对立即数有限制
+如果数比较大，用ldr r0,=const会多占空间，降低效率
+
+
+b foo  跳转范围在32M内
+给pc赋值就能任意跳转
+
+利用辗转相减法求两个数的最大公约数
+
+猴子吃桃问题
+有一只猴子摘了一堆桃子,当即吃了一半,又再多吃了一个.
+以后每天重复,到第10天发现只有1个桃子了
+问最开始摘了多少个桃子
+#include <stdio.h>
+
+int main()
+{
+    int x=1;
+    int day=10;
+    while(--day)
+    {
+        x=(x+1)*2;
+        printf("day=%d,x=%d\n",day,x);
+    }
+    return 0;
+}

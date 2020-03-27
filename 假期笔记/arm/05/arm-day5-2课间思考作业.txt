@@ -1,0 +1,5 @@
+1.ldm指令的意义
+2.ldmia r10!, {r0, r1, r4}的含义
+3.stm指令的意义
+4.ldmib的意义
+5.ldm和ldr的区别

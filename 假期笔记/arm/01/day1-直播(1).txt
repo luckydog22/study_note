@@ -1,0 +1,127 @@
+链接：https://pan.baidu.com/s/1oEwYpIoBmisLAJHeF830yw 
+提取码：8c1r 
+
+课程简介
+重要性 了解性
+ARM与嵌入式
+软硬件结合
+
+1.预备知识
+模拟和数字部分
+
+硅谷
+radio silicon substrate 工厂简介
+什么是半导体 回忆导体,绝缘体,半导体
+半导体器件
+本征半导体--高纯硅
+热敏 光敏 掺杂
+PN结
+
+门电路
+正负逻辑
+与 或 非
+
+
+
+计算机组成原理部分
+
+硬件系统 软件系统
+组成原理主要研究硬件组成
+CPU(运算器控制器) 存储器(内存 外存) 外设(输入设备 输出设备)
+寄存器与cache
+
+总线
+
+研究计算机组成原理对优化程序的作用
+1.请简述以下两个for循环的优缺点
+第一个
+for(i=0;i<N;i++)
+{
+	if(condition)
+		DoSomething();
+	else
+		DoOtherthing();
+}
+优点:程序简洁
+缺点:多执行N-1次逻辑判断,并且打断的循环"流水线"作业,降低了效率
+第二个
+if(condition)
+{
+	for(i=0;i<N;i++)
+		DoSomething();
+}
+else
+{
+	for(i=0;i<N;i++)
+		DoOtherthing();
+}
+优点:循环的效率高
+缺点:程序不简洁
+
+2.优化下面的程序
+高斯的故事
+double list[100];
+double sum=0;
+for(int i=0;i<100;i++)
+	sum += list[i];
+能优化吗?从C语言角度来说没有
+
+从处理器层面可以做如下优化:
+double list[100];
+double sum1=0,sum2=0;
+for(int i=0;i<100;i+=2)
+{
+	sum1 += list[i];
+	sum2 += list[i+1];
+}
+sum=sum1+sum2;
+循环展开,把100次循环变成了50次,减少了条件跳转的次数
+现代CPU的同时处理问题 浮点运算较慢
+
+3.局部变量 全局变量 堆内存的效率问题
+
+4.结构体对齐问题
+
+5.乘除法问题
+
+6.避免过大的循环
+
+
+识别原理图
+
+2.ARM体系结构
+ARM手臂  thumb姆指
+
+ARM advanced RISC machine
+软银收购
+
+RISC与CISC
+
+foundry与fabless
+TSMC
+
+编程模型
+程序运行原理
+CPU RAM ROM 寄存器
+
+ARM处理器工作模式
+寄存器banked
+
+大端与小端模式测试
+汇编代码，了解性，多接触
+段的概念
+.text		
+.globl _start
+_start:
+	ldr r0,=0x11223344
+	mov r1,#0x40000000
+	str r0,[r1]
+	ldrb r2,[r1]
+	b .
+.end
+
+
+指令集
+预处理，编译，汇编，链接流程
+
+汇编程语言程序设计
